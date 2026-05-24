@@ -19,9 +19,6 @@ height = 1.8
 [sub_resource type="StandardMaterial3D" id="Material_grey"]
 albedo_color = Color(0.5, 0.5, 0.5, 1)
 
-; ──────────────────────────────────────────
-; Root — CharacterBody3D
-; ──────────────────────────────────────────
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("1_ctrl")
 stand_collision_path = NodePath("StandCollision")
@@ -29,44 +26,35 @@ crouch_collision_path = NodePath("CrouchCollision")
 camera_mount_path = NodePath("CameraMount")
 interact_ray_path = NodePath("InteractRay")
 
-; Standing collision (capsule, 1.8 m tall)
 [node name="StandCollision" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_stand")
 position = Vector3(0, 0.9, 0)
 
-; Crouching collision (capsule, 1.2 m tall) — disabled by default
 [node name="CrouchCollision" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_crouch")
 position = Vector3(0, 0.6, 0)
 disabled = true
 
-; Placeholder mesh (grey capsule — replaced by Agent 28)
 [node name="MeshInstance" type="MeshInstance3D" parent="."]
 mesh = SubResource("CapsuleMesh_placeholder")
 position = Vector3(0, 0.9, 0)
 surface_material_override/0 = SubResource("Material_grey")
 layers = 2
 
-; ──────────────────────────────────────────
-; Camera mount — yaw pivot, translates with bob
-; ──────────────────────────────────────────
 [node name="CameraMount" type="Node3D" parent="."]
 position = Vector3(0, 1.6, 0)
 
-; PlayerCamera script lives here
 [node name="PlayerCamera" type="Node" parent="CameraMount"]
 script = ExtResource("3_cam")
 fp_camera_path = NodePath("FPCamera")
 tp_arm_path = NodePath("TPArm")
 tp_camera_path = NodePath("TPArm/TPCamera")
 
-; First-person camera (pitch pivot)
 [node name="FPCamera" type="Camera3D" parent="CameraMount"]
 fov = 75.0
 near = 0.05
 current = true
 
-; Third-person spring arm
 [node name="TPArm" type="SpringArm3D" parent="CameraMount"]
 position = Vector3(0, 0, 0)
 spring_length = 3.0
@@ -77,24 +65,15 @@ fov = 75.0
 near = 0.1
 current = false
 
-; ──────────────────────────────────────────
-; Interaction raycast (2.5 m forward)
-; ──────────────────────────────────────────
 [node name="InteractRay" type="RayCast3D" parent="."]
 position = Vector3(0, 1.6, 0)
 target_position = Vector3(0, 0, -2.5)
 enabled = true
 collision_mask = 4
 
-; ──────────────────────────────────────────
-; Audio (footsteps)
-; ──────────────────────────────────────────
 [node name="FootstepAudio" type="AudioStreamPlayer3D" parent="."]
 max_distance = 20.0
 bus = &"SFX"
 
-; ──────────────────────────────────────────
-; Input handler
-; ──────────────────────────────────────────
 [node name="PlayerInput" type="Node" parent="."]
 script = ExtResource("2_input")

@@ -136,7 +136,7 @@ func _test_weight() -> void:
 	var over: float = maxf(0.0, 30.0 - BASE_LIMIT)
 	_assert(over == 0.0, "Weight: no penalty at base limit")
 
-	# 10 kg over = −0.5 m/s.
+	# 10 kg over = -0.5 m/s.
 	over = maxf(0.0, 40.0 - BASE_LIMIT)
 	var penalty: float = over * PENALTY
 	_assert(is_equal_approx(penalty, 0.5), "Weight: 10 kg over = 0.5 m/s penalty")

@@ -83,6 +83,13 @@ const VALID_TRANSITIONS: Dictionary = {
 }
 
 # ─────────────────────────────────────────────
+# Signals
+# ─────────────────────────────────────────────
+
+## Emitted after every successful transition. Connect from the owning controller.
+signal state_changed(from_state: State, to_state: State)
+
+# ─────────────────────────────────────────────
 # State tracking
 # ─────────────────────────────────────────────
 
@@ -118,10 +125,12 @@ func transition_to(new_state: State) -> bool:
 		return false
 
 	on_state_exited(current_state)
+	var from: State = current_state
 	previous_state = current_state
 	current_state = new_state
 	state_duration = 0.0
 	on_state_entered(current_state)
+	state_changed.emit(from, current_state)
 	return true
 
 ## Returns true if moving to new_state from current_state is valid.

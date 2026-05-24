@@ -116,6 +116,7 @@ var _injury_head: bool = false
 func _ready() -> void:
 	_state_machine = PlayerStateMachine.new()
 	add_child(_state_machine)
+	_state_machine.state_changed.connect(_on_state_changed)
 
 	# Find PlayerInput sibling or child.
 	_input = _find_node_of_script("player_input.gd")
@@ -127,7 +128,6 @@ func _ready() -> void:
 
 	# Lock cursor for mouse look when gameplay starts.
 	_set_mouse_mode_for_state(GameManager.current_state)
-	GameManager.current_state  # evaluated once to register
 
 	# Camera snap to standing position.
 	_update_camera_mount_height(false)
@@ -151,23 +151,17 @@ func _physics_process(delta: float) -> void:
 		_input.consume_frame()
 
 # ─────────────────────────────────────────────
-# State machine integration
+# State change handler (connected to PlayerStateMachine.state_changed)
 # ─────────────────────────────────────────────
 
-func on_state_entered(state: PlayerStateMachine.State) -> void:
-	match state:
-		PlayerStateMachine.State.CROUCHING:
-			_swap_collision(true)
-			_update_camera_mount_height(true)
-		PlayerStateMachine.State.PRONE:
+func _on_state_changed(_from: PlayerStateMachine.State, to: PlayerStateMachine.State) -> void:
+	match to:
+		PlayerStateMachine.State.CROUCHING, PlayerStateMachine.State.PRONE:
 			_swap_collision(true)
 			_update_camera_mount_height(true)
 		_:
 			_swap_collision(false)
 			_update_camera_mount_height(false)
-
-func on_state_exited(_state: PlayerStateMachine.State) -> void:
-	pass
 
 # ─────────────────────────────────────────────
 # State transition logic (called each physics tick)
@@ -404,9 +398,11 @@ func _swap_collision(crouching: bool) -> void:
 func _update_camera_mount_height(crouching: bool) -> void:
 	if not _camera_mount:
 		return
-	var state: PlayerStateMachine.State = _state_machine.current_state if _state_machine else PlayerStateMachine.State.IDLE
+	var current: PlayerStateMachine.State = (
+		_state_machine.current_state if _state_machine else PlayerStateMachine.State.IDLE
+	)
 	var target_y: float
-	if state == PlayerStateMachine.State.PRONE:
+	if current == PlayerStateMachine.State.PRONE:
 		target_y = 0.25
 	elif crouching:
 		target_y = 0.85
