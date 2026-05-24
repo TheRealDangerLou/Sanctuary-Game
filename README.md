@@ -26,6 +26,40 @@ You wake up in a world that has already ended. Somewhere out there, your daughte
 
 ---
 
+## Input Compatibility
+
+The game is fully compatible with **keyboard/mouse and controller** simultaneously. All gameplay actions are mapped to both in `project.godot` — no keyboard-only assumptions anywhere in the codebase. Code always uses `Input.is_action_pressed("action_name")` and never raw key queries.
+
+**Controller layout** — Xbox buttons listed; PlayStation equivalents in parentheses.
+
+| Action | Keyboard / Mouse | Controller |
+|---|---|---|
+| Move Forward | `W` | Left Stick ↑ |
+| Move Backward | `S` | Left Stick ↓ |
+| Move Left | `A` | Left Stick ← |
+| Move Right | `D` | Left Stick → |
+| Jump | `Space` | `A` (`Cross`) |
+| Sprint | `Left Shift` | `L3` (click left stick) |
+| Crouch | `C` | `B` (`Circle`) |
+| Interact | `E` | `Y` (`Triangle`) |
+| Primary Attack | `LMB` | `RT` (`R2`) |
+| Aim | `RMB` | `LT` (`L2`) |
+| Reload | `R` | `X` (`Square`) |
+| Melee Attack | `F` | `RB` (`R1`) |
+| Use Item | `Q` | `LB` (`L1`) |
+| Open Inventory | `Tab` | `Back` (`Select`) |
+| Pause | `Escape` | `Start` (`Options`) |
+| Open Map | `M` | D-Pad `↑` |
+| Open Journal | `J` | D-Pad `↓` |
+| Hotbar Next | `]` or Scroll Down | D-Pad `→` |
+| Hotbar Prev | `[` or Scroll Up | D-Pad `←` |
+| Hotbar 1–8 | `1` – `8` | cycle via Hotbar Next/Prev |
+| Drop Item | `G` | inventory screen |
+
+**Analogue deadzone:** 0.5 on all axes.
+
+---
+
 ## Setup
 
 ### Prerequisites
