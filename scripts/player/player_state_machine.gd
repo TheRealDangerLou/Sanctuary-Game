@@ -1,25 +1,27 @@
 extends Node
-## PlayerStateMachine: Base class for the player character finite state machine.
-## Agent 02 (Player Controller) extends this class and overrides on_state_entered /
-## on_state_exited to implement per-state input and animation logic.
+## PlayerStateMachine: Finite state machine for the player character.
+## Agent 02 owns PRONE and CLIMBING additions; all else is Agent 01 foundation.
+## player_controller.gd extends this class and overrides on_state_entered /
+## on_state_exited to drive animation, collider swaps, and input locks.
 
 # ─────────────────────────────────────────────
 # Enums
 # ─────────────────────────────────────────────
 
 enum State {
-	IDLE,        ## Standing still, no input.
+	IDLE,        ## Standing still, no movement input.
 	WALKING,     ## Moving at walk speed.
 	RUNNING,     ## Moving at run speed, consuming stamina.
-	CROUCHING,   ## Low-profile movement or stealth stance.
+	CROUCHING,   ## Reduced-height movement for stealth or cover.
+	PRONE,       ## Flat on ground, minimal noise, slowest movement.
 	SWIMMING,    ## Moving through a water volume.
-	DEAD,        ## Player has died; no transitions out.
+	DEAD,        ## Terminal — no transitions out.
 	INTERACTING, ## Engaged with a world object or NPC dialogue.
+	CLIMBING,    ## Traversing a climbable surface (ladder, ledge).
 }
 
 # ─────────────────────────────────────────────
 # Transition table
-# Lists every state that is reachable from each source state.
 # Any transition not listed here is rejected by transition_to().
 # ─────────────────────────────────────────────
 
@@ -28,17 +30,21 @@ const VALID_TRANSITIONS: Dictionary = {
 		State.WALKING,
 		State.RUNNING,
 		State.CROUCHING,
+		State.PRONE,
 		State.SWIMMING,
 		State.DEAD,
 		State.INTERACTING,
+		State.CLIMBING,
 	],
 	State.WALKING: [
 		State.IDLE,
 		State.RUNNING,
 		State.CROUCHING,
+		State.PRONE,
 		State.SWIMMING,
 		State.DEAD,
 		State.INTERACTING,
+		State.CLIMBING,
 	],
 	State.RUNNING: [
 		State.IDLE,
@@ -49,8 +55,14 @@ const VALID_TRANSITIONS: Dictionary = {
 	State.CROUCHING: [
 		State.IDLE,
 		State.WALKING,
+		State.PRONE,
 		State.DEAD,
 		State.INTERACTING,
+	],
+	State.PRONE: [
+		State.IDLE,
+		State.CROUCHING,
+		State.DEAD,
 	],
 	State.SWIMMING: [
 		State.IDLE,
@@ -63,6 +75,11 @@ const VALID_TRANSITIONS: Dictionary = {
 		State.WALKING,
 		State.DEAD,
 	],
+	State.CLIMBING: [
+		State.IDLE,
+		State.WALKING,
+		State.DEAD,
+	],
 }
 
 # ─────────────────────────────────────────────
@@ -71,9 +88,9 @@ const VALID_TRANSITIONS: Dictionary = {
 
 ## The currently active state.
 var current_state: State = State.IDLE
-## The state that was active immediately before the current one.
+## The state active immediately before the current one.
 var previous_state: State = State.IDLE
-## Seconds the player has been in the current state; reset on every transition.
+## Seconds spent in the current state; reset on every transition.
 var state_duration: float = 0.0
 
 # ─────────────────────────────────────────────
@@ -93,7 +110,7 @@ func _process(delta: float) -> void:
 func transition_to(new_state: State) -> bool:
 	if not can_transition_to(new_state):
 		push_warning(
-			"PlayerStateMachine: Rejected transition %s to %s" % [
+			"PlayerStateMachine: Rejected transition %s → %s" % [
 				State.keys()[current_state],
 				State.keys()[new_state],
 			]
@@ -107,7 +124,7 @@ func transition_to(new_state: State) -> bool:
 	on_state_entered(current_state)
 	return true
 
-## Returns true if moving to new_state from current_state is a valid transition.
+## Returns true if moving to new_state from current_state is valid.
 func can_transition_to(new_state: State) -> bool:
 	if new_state == current_state:
 		return false
@@ -122,15 +139,13 @@ func get_previous_state_name() -> String:
 	return State.keys()[previous_state]
 
 # ─────────────────────────────────────────────
-# Hooks - override in subclass
+# Hooks — override in subclass
 # ─────────────────────────────────────────────
 
-## Called immediately after entering a new state.
-## Override to start animations, enable input modes, etc.
+## Called immediately after entering a new state. Override to start animations, etc.
 func on_state_entered(_state: State) -> void:
 	pass
 
-## Called immediately before leaving the current state.
-## Override to stop animations, clear input locks, etc.
+## Called immediately before leaving the current state. Override to clean up.
 func on_state_exited(_state: State) -> void:
 	pass
