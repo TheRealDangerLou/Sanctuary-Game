@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://weapon_shotgun"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/ranged_weapon.gd" id="1_ranged"]
+
+[node name="Shotgun" type="Node3D"]
+script = ExtResource("1_ranged")
+weapon_id = "shotgun"
+damage = 80.0
+range_metres = 15.0
+fire_rate = 0.7
+noise_level = 9
+max_condition = 120.0
+condition_drain_per_use = 1.5
+noise_radius = 80.0
+magazine_capacity = 6
+reload_time = 3.0
+is_automatic = false
+ads_fov_offset = -5.0
+effective_range = 15.0
+
+[node name="MuzzlePoint" type="Node3D" parent="."]
+position = Vector3(0, 0, -0.65)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

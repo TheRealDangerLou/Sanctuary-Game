@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://weapon_machete"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/melee_weapon.gd" id="1_melee"]
+
+[node name="Machete" type="Node3D"]
+script = ExtResource("1_melee")
+weapon_id = "machete"
+damage = 38.0
+range_metres = 1.5
+fire_rate = 1.8
+noise_level = 2
+max_condition = 100.0
+condition_drain_per_use = 1.0
+noise_radius = 5.0
+kockback_force = 4.0
+can_cause_bleed = true
+bleed_rate = 4.5
+default_hit_location = "torso"
+
+[node name="Hitbox" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitbox"]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
