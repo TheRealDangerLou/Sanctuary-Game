@@ -1,0 +1,79 @@
+[gd_scene load_steps=8 format=3 uid="uid://player_main_scene"]
+
+[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_ctrl"]
+[ext_resource type="Script" path="res://scripts/player/player_input.gd" id="2_input"]
+[ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="3_cam"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_stand"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_crouch"]
+radius = 0.4
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_placeholder"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Material_grey"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_ctrl")
+stand_collision_path = NodePath("StandCollision")
+crouch_collision_path = NodePath("CrouchCollision")
+camera_mount_path = NodePath("CameraMount")
+interact_ray_path = NodePath("InteractRay")
+
+[node name="StandCollision" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_stand")
+position = Vector3(0, 0.9, 0)
+
+[node name="CrouchCollision" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_crouch")
+position = Vector3(0, 0.6, 0)
+disabled = true
+
+[node name="MeshInstance" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_placeholder")
+position = Vector3(0, 0.9, 0)
+surface_material_override/0 = SubResource("Material_grey")
+layers = 2
+
+[node name="CameraMount" type="Node3D" parent="."]
+position = Vector3(0, 1.6, 0)
+
+[node name="PlayerCamera" type="Node" parent="CameraMount"]
+script = ExtResource("3_cam")
+fp_camera_path = NodePath("FPCamera")
+tp_arm_path = NodePath("TPArm")
+tp_camera_path = NodePath("TPArm/TPCamera")
+
+[node name="FPCamera" type="Camera3D" parent="CameraMount"]
+fov = 75.0
+near = 0.05
+current = true
+
+[node name="TPArm" type="SpringArm3D" parent="CameraMount"]
+position = Vector3(0, 0, 0)
+spring_length = 3.0
+collision_mask = 1
+
+[node name="TPCamera" type="Camera3D" parent="CameraMount/TPArm"]
+fov = 75.0
+near = 0.1
+current = false
+
+[node name="InteractRay" type="RayCast3D" parent="."]
+position = Vector3(0, 1.6, 0)
+target_position = Vector3(0, 0, -2.5)
+enabled = true
+collision_mask = 4
+
+[node name="FootstepAudio" type="AudioStreamPlayer3D" parent="."]
+max_distance = 20.0
+bus = &"SFX"
+
+[node name="PlayerInput" type="Node" parent="."]
+script = ExtResource("2_input")
