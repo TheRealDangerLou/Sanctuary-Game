@@ -50,6 +50,11 @@ var world_manager: Node = null
 var weather_system: Node = null
 var crafting_system: Node = null
 var combat_system: Node = null
+## Agent 04 — survival systems registered on _ready by each script.
+var player_stats: Node = null
+var rose_stats: Node = null
+var injury_system: Node = null
+var sanity_system: Node = null
 
 # ─────────────────────────────────────────────
 # Lifecycle
@@ -104,9 +109,9 @@ func new_game() -> void:
 	set_state(GameState.PLAYING)
 	EventBus.player_spawned.emit(Vector3.ZERO)
 
-## Returns the current in-game time formatted as "Day X - HH:MM".
+## Returns the current in-game time formatted as "Day X — HH:MM".
 func get_time_string() -> String:
-	return "Day %d - %02d:%02d" % [game_day, game_hour, game_minute]
+	return "Day %d — %02d:%02d" % [game_day, game_hour, game_minute]
 
 ## Returns the previous game state before the last transition.
 func get_previous_state() -> GameState:
