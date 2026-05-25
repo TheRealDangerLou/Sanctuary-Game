@@ -11,21 +11,14 @@ extends Node
 var _active_bleeds: Dictionary = {}
 
 # ─────────────────────────────────────────────
-# Ragdoll grace period
-# ─────────────────────────────────────────────
-
-## How long (seconds) after death before ragdoll is triggered.
-const RAGDOLL_DELAY: float = 0.05
-
-# ─────────────────────────────────────────────
 # Lifecycle
 # ─────────────────────────────────────────────
 
 func _ready() -> void:
 	EventBus.bleed_started.connect(_on_bleed_started)
-	EventBus.combat_hit.connect(_on_combat_hit)
 	EventBus.npc_died.connect(_on_npc_died)
 	EventBus.player_hit.connect(_on_player_hit)
+	EventBus.injury_treated.connect(_on_injury_treated)
 
 func _process(delta: float) -> void:
 	_tick_bleeds(delta)
@@ -58,11 +51,6 @@ func _on_bleed_started(target_id: String, bleed_rate: float) -> void:
 	# New bleed overwrites old one (higher rate wins implicitly — caller decides).
 	_active_bleeds[target_id] = bleed_rate
 
-func _on_combat_hit(target_id: String, damage: float, hit_location: String) -> void:
-	# If the hit location is head and damage meets instakill threshold, fire death.
-	if HitDetection.is_instakill(damage, hit_location):
-		_schedule_ragdoll(target_id, Vector3.UP)
-
 func _on_player_hit(damage: float, hit_location: String) -> void:
 	# Route to EventBus so HUD and status systems can react.
 	# The actual health deduction lives in the player stats node (Agent 02).
@@ -71,6 +59,11 @@ func _on_player_hit(damage: float, hit_location: String) -> void:
 
 func _on_npc_died(npc_id: String, _cause: String) -> void:
 	_active_bleeds.erase(npc_id)
+
+func _on_injury_treated(_location: String) -> void:
+	# Any treated wound on the player stops their bleed.
+	# NPC bleed clearance is handled by the NPC health system (Agent 08-10).
+	_active_bleeds.erase("player")
 
 # ─────────────────────────────────────────────
 # Private
@@ -81,7 +74,3 @@ func _tick_bleeds(delta: float) -> void:
 		var rate: float = _active_bleeds[target_id]
 		# Emit a synthetic combat_hit so health systems see continuous damage.
 		EventBus.combat_hit.emit(target_id, rate * delta, "bleed")
-
-func _schedule_ragdoll(target_id: String, hit_dir: Vector3) -> void:
-	await get_tree().create_timer(RAGDOLL_DELAY).timeout
-	EventBus.ragdoll_triggered.emit(target_id, hit_dir)

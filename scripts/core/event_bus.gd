@@ -62,6 +62,8 @@ signal combat_hit(target_id: String, damage: float, hit_location: String)
 signal weapon_fired(weapon_id: String, position: Vector3, noise_level: int)
 ## Emitted when a weapon begins its reload sequence.
 signal weapon_reloading(weapon_id: String)
+## Emitted when a weapon jams due to low condition. Clears after the unjam delay.
+signal weapon_jammed(weapon_id: String)
 ## Emitted when a bleed effect begins on a target.
 signal bleed_started(target_id: String, bleed_rate: float)
 ## Emitted when a death triggers the ragdoll physics sequence.

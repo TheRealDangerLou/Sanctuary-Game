@@ -94,7 +94,6 @@ func get_ammo_state() -> Array:
 func _cast_ray() -> void:
 	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var origin: Vector3 = global_position if not _muzzle_point else _muzzle_point.global_position
-	# Use the camera's forward direction if wielder provides it, else weapon forward.
 	var forward: Vector3 = -global_transform.basis.z
 	if wielder and wielder.has_method("get_aim_direction"):
 		forward = wielder.get_aim_direction()
@@ -110,28 +109,48 @@ func _cast_ray() -> void:
 	var hit_pos: Vector3 = result["position"]
 	var hit_normal: Vector3 = result["normal"]
 	var hit_body: Object = result["collider"]
-
-	# Distance fall-off — linear from full damage at 0 to 0 at effective_range.
-	var dist: float = origin.distance_to(hit_pos)
-	var falloff: float = clamp(1.0 - (dist / effective_range), 0.0, 1.0)
-	var effective_dmg: float = get_effective_damage() * falloff
-
-	var target_id: String = hit_body.name if hit_body else "world"
 	var hit_location: String = _resolve_hit_location(hit_body, hit_pos)
 
-	EventBus.combat_hit.emit(target_id, effective_dmg, hit_location)
+	var base_dmg: float = get_effective_damage()
+
+	# Instakill is checked against BASE weapon damage — a firearm headshot always kills
+	# regardless of distance. Falloff does not apply to instant-kill hits.
+	var is_ik: bool = HitDetection.is_instakill(base_dmg, hit_location)
+
+	var dist: float = origin.distance_to(hit_pos)
+	var falloff: float = clamp(1.0 - (dist / effective_range), 0.0, 1.0)
+	# Instakill hits bypass falloff; all others scale linearly with distance.
+	var pre_scale_dmg: float = base_dmg if is_ik else base_dmg * falloff
+
+	# Apply per-location damage multiplier (head = 10x, neck = 3.5x, etc.).
+	var final_dmg: float = HitDetection.get_scaled_damage(pre_scale_dmg, hit_location)
+
+	var target_id: String = hit_body.name if hit_body else "world"
+
+	EventBus.combat_hit.emit(target_id, final_dmg, hit_location)
 	EventBus.blood_impact.emit(hit_pos, hit_normal)
 
+	# Ragdoll dispatch happens here where base damage is known. CombatSystem receives
+	# scaled damage so cannot reliably check the instakill threshold.
+	if is_ik:
+		EventBus.ragdoll_triggered.emit(target_id, forward)
+
+	# Bleed is probabilistic — rolls against HitDetection.BLEED_CHANCE table.
+	if HitDetection.rolls_bleed(hit_location):
+		EventBus.bleed_started.emit(target_id, bleed_rate)
+
+	# Friendly fire: notify narrative systems so moral alignment can react.
+	if hit_body and hit_body.has_meta("is_friendly") and hit_body.get_meta("is_friendly"):
+		EventBus.narrative_event_triggered.emit("friendly_fire_" + target_id)
+
 	if hit_body and hit_body.has_method("receive_hit"):
-		hit_body.receive_hit(effective_dmg, hit_location, hit_pos)
+		hit_body.receive_hit(final_dmg, hit_location, hit_pos)
 
 func _resolve_hit_location(body: Object, _hit_pos: Vector3) -> String:
-	# If the hit body has named hitbox areas we can query, use them.
-	# Fallback to generic "torso" for now; HitDetection refines this.
 	if body == null:
 		return "world"
 	if body.has_meta("hit_location"):
-		return body.get_meta("hit_location")
+		return HitDetection.resolve_area_location(body.get_meta("hit_location"))
 	return "torso"
 
 func _spawn_muzzle_flash() -> void:
@@ -139,4 +158,3 @@ func _spawn_muzzle_flash() -> void:
 		return
 	var flash: Node3D = muzzle_flash_scene.instantiate() as Node3D
 	_muzzle_point.add_child(flash)
-	# Flash destroys itself via its own timer.
