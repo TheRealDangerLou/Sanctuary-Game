@@ -24,10 +24,15 @@ enum WeaponType { MELEE, RANGED }
 @export var max_condition: float = 100.0
 ## How much condition is lost per attack.
 @export var condition_drain_per_use: float = 1.0
-## Below this threshold the weapon is considered "poor" — applies penalty.
+## Below this threshold damage is penalised and jams become possible.
 @export var condition_poor_threshold: float = 30.0
 ## Noise radius in world-space metres when fired/swung.
 @export var noise_radius: float = 5.0
+## Maximum jam probability when condition is near 0. Scales linearly from 0 at
+## condition_poor_threshold down to jam_chance_max at condition 0.
+@export var jam_chance_max: float = 0.15
+## Bleed rate in HP/s applied when this weapon causes a bleed. Subclasses may override.
+@export var bleed_rate: float = 2.0
 
 # ─────────────────────────────────────────────
 # Runtime state
@@ -58,7 +63,7 @@ func _process(delta: float) -> void:
 # Public API
 # ─────────────────────────────────────────────
 
-## Attempt an attack. Returns true if the attack actually fired (cooldown clear, weapon alive).
+## Attempt an attack. Returns true if the attack actually fired.
 func attack() -> bool:
 	if not _can_attack():
 		return false
@@ -91,6 +96,13 @@ func get_effective_damage() -> float:
 		return damage * 0.6
 	return damage
 
+## Returns the current jam probability (0.0–1.0). Zero above condition_poor_threshold.
+func get_jam_probability() -> float:
+	if current_condition >= condition_poor_threshold or jam_chance_max <= 0.0:
+		return 0.0
+	var severity: float = 1.0 - (current_condition / condition_poor_threshold)
+	return jam_chance_max * severity
+
 # ─────────────────────────────────────────────
 # Protected virtual — override in subclasses
 # ─────────────────────────────────────────────
@@ -108,7 +120,21 @@ func _can_attack() -> bool:
 		return false
 	if _attack_cooldown > 0.0:
 		return false
+	if _check_jam():
+		return false
 	return true
+
+## Rolls jam chance. If jammed, emits weapon_jammed and sets a cooldown so the player
+## must wait before the weapon cycles again (simulates clearing the jam).
+func _check_jam() -> bool:
+	if randf() < get_jam_probability():
+		# Jam clears after ~1.5 s — long enough to feel punishing, short enough to survive.
+		_attack_cooldown = 1.5
+		var world_pos: Vector3 = global_position if is_inside_tree() else Vector3.ZERO
+		EventBus.noise_generated.emit(world_pos, 1.0, 1)
+		EventBus.weapon_jammed.emit(weapon_id)
+		return true
+	return false
 
 func _degrade_condition() -> void:
 	current_condition = max(0.0, current_condition - condition_drain_per_use)

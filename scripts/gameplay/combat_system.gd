@@ -26,6 +26,7 @@ func _ready() -> void:
 	EventBus.combat_hit.connect(_on_combat_hit)
 	EventBus.npc_died.connect(_on_npc_died)
 	EventBus.player_hit.connect(_on_player_hit)
+	EventBus.injury_treated.connect(_on_injury_treated)
 
 func _process(delta: float) -> void:
 	_tick_bleeds(delta)
@@ -71,6 +72,11 @@ func _on_player_hit(damage: float, hit_location: String) -> void:
 
 func _on_npc_died(npc_id: String, _cause: String) -> void:
 	_active_bleeds.erase(npc_id)
+
+func _on_injury_treated(location: String) -> void:
+	# Any treated wound on the player stops their bleed.
+	# NPC bleed clearance is handled by the NPC health system (Agent 08-10).
+	_active_bleeds.erase("player")
 
 # ─────────────────────────────────────────────
 # Private
