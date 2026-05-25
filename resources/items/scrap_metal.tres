@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3 uid="uid://item_scrap_metal"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/item_data.gd" id="1_itd"]
+
+[resource]
+script = ExtResource("1_itd")
+item_id = "scrap_metal"
+display_name = "Scrap Metal"
+description = "Bent and rusted metal salvaged from vehicles and appliances."
+item_type = 0
+weight = 1.5
+is_stackable = true
+max_stack = 50

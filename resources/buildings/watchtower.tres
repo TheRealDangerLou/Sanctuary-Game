@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3 uid="uid://bld_watchtower"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/building_data.gd" id="1_bld"]
+
+[resource]
+script = ExtResource("1_bld")
+building_id = "watchtower"
+display_name = "Watchtower"
+description = "An elevated lookout post. Extends visibility and warns of incoming hordes."
+building_type = 1
+cost = {"wood_plank": 12, "scrap_metal": 6}
+tier_required = 1
+provides_station = ""
+max_per_compound = 4
+morale_bonus = 0.03

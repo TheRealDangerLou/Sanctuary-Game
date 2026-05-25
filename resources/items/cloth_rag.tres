@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3 uid="uid://item_cloth_rag"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/item_data.gd" id="1_itd"]
+
+[resource]
+script = ExtResource("1_itd")
+item_id = "cloth_rag"
+display_name = "Cloth Rag"
+description = "A strip of torn fabric. Used in bandages and basic repairs."
+item_type = 0
+weight = 0.1
+is_stackable = true
+max_stack = 99

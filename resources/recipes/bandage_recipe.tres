@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CraftingRecipe" load_steps=2 format=3 uid="uid://recipe_bandage"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/crafting_recipe.gd" id="1_crf"]
+
+[resource]
+script = ExtResource("1_crf")
+recipe_id = "bandage_recipe"
+output_item_id = "bandage"
+output_quantity = 2
+craft_time = 4.0
+required_station = ""
+ingredients = {"cloth_rag": 3}
+required_knowledge = ""
