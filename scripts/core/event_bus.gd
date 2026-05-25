@@ -176,3 +176,14 @@ signal game_loaded(slot: int)
 signal autosave_triggered()
 ## Emitted on permanent death. legacy_data carries stats for the legacy screen.
 signal character_died_permanently(legacy_data: Dictionary)
+
+# ─────────────────────────────────────────────
+# Corpse loot signals
+# ─────────────────────────────────────────────
+
+## Emitted when an enemy corpse becomes lootable. corpse_id is a unique run-scoped key.
+signal corpse_spawned(corpse_id: String, position: Vector3)
+## Emitted when the player fully loots a corpse container.
+signal corpse_looted(corpse_id: String)
+## Emitted when a corpse container expires and is removed from the world.
+signal corpse_despawned(corpse_id: String)
