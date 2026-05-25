@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3 uid="uid://item_bandage"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/item_data.gd" id="1_itd"]
+
+[resource]
+script = ExtResource("1_itd")
+item_id = "bandage"
+display_name = "Bandage"
+description = "A clean cloth wrap. Stops bleeding when applied to a wound."
+item_type = 1
+weight = 0.2
+is_stackable = true
+max_stack = 20

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CraftingRecipe" load_steps=2 format=3 uid="uid://recipe_workbench_build"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/crafting_recipe.gd" id="1_crf"]
+
+[resource]
+script = ExtResource("1_crf")
+recipe_id = "workbench_recipe"
+output_item_id = "workbench_kit"
+output_quantity = 1
+craft_time = 15.0
+required_station = ""
+ingredients = {"wood_plank": 8, "scrap_metal": 4}
+required_knowledge = ""

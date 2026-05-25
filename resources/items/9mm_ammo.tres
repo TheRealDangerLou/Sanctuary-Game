@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3 uid="uid://item_9mm_ammo"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/item_data.gd" id="1_itd"]
+
+[resource]
+script = ExtResource("1_itd")
+item_id = "9mm_ammo"
+display_name = "9mm Rounds"
+description = "Standard 9mm pistol ammunition. Fits the pistol and suppressed pistol."
+item_type = 5
+weight = 0.01
+is_stackable = true
+max_stack = 200

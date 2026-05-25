@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3 uid="uid://bld_shelter_basic"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/building_data.gd" id="1_bld"]
+
+[resource]
+script = ExtResource("1_bld")
+building_id = "shelter_basic"
+display_name = "Basic Shelter"
+description = "A simple lean-to. Provides minimal protection and improves settler morale."
+building_type = 0
+cost = {"wood_plank": 6}
+tier_required = 0
+provides_station = ""
+max_per_compound = -1
+morale_bonus = 0.05

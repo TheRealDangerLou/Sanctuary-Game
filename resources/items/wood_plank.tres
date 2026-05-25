@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3 uid="uid://item_wood_plank"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/item_data.gd" id="1_itd"]
+
+[resource]
+script = ExtResource("1_itd")
+item_id = "wood_plank"
+display_name = "Wood Plank"
+description = "A rough plank of wood. Essential for construction and basic crafting."
+item_type = 0
+weight = 1.0
+is_stackable = true
+max_stack = 50

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CraftingRecipe" load_steps=2 format=3 uid="uid://recipe_improvised_knife"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/crafting_recipe.gd" id="1_crf"]
+
+[resource]
+script = ExtResource("1_crf")
+recipe_id = "improvised_knife_recipe"
+output_item_id = "knife"
+output_quantity = 1
+craft_time = 8.0
+required_station = "workbench"
+ingredients = {"scrap_metal": 2, "cloth_rag": 1}
+required_knowledge = ""

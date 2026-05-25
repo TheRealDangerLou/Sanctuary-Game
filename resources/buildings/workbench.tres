@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3 uid="uid://bld_workbench"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/building_data.gd" id="1_bld"]
+
+[resource]
+script = ExtResource("1_bld")
+building_id = "workbench"
+display_name = "Workbench"
+description = "A sturdy crafting table. Enables weapon and tool fabrication."
+building_type = 2
+cost = {"wood_plank": 8, "scrap_metal": 4}
+tier_required = 0
+provides_station = "workbench"
+max_per_compound = 1
+morale_bonus = 0.0
