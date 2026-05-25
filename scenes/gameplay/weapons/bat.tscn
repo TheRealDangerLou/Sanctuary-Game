@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://weapon_bat"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/melee_weapon.gd" id="1_melee"]
+
+[node name="Bat" type="Node3D"]
+script = ExtResource("1_melee")
+weapon_id = "bat"
+damage = 30.0
+range_metres = 1.2
+fire_rate = 1.2
+noise_level = 2
+max_condition = 200.0
+condition_drain_per_use = 0.5
+noise_radius = 8.0
+kockback_force = 6.0
+can_cause_bleed = false
+bleed_rate = 0.0
+default_hit_location = "torso"
+
+[node name="Hitbox" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitbox"]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

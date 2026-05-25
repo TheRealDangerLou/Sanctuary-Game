@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://weapon_suppressed_pistol"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/ranged_weapon.gd" id="1_ranged"]
+
+[node name="SuppressedPistol" type="Node3D"]
+script = ExtResource("1_ranged")
+weapon_id = "suppressed_pistol"
+damage = 30.0
+range_metres = 25.0
+fire_rate = 2.0
+noise_level = 2
+max_condition = 100.0
+condition_drain_per_use = 0.6
+noise_radius = 8.0
+magazine_capacity = 10
+reload_time = 1.8
+is_automatic = false
+ads_fov_offset = -10.0
+effective_range = 25.0
+
+[node name="MuzzlePoint" type="Node3D" parent="."]
+position = Vector3(0, 0, -0.55)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
