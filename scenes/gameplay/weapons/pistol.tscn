@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://weapon_pistol"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/ranged_weapon.gd" id="1_ranged"]
+
+[node name="Pistol" type="Node3D"]
+script = ExtResource("1_ranged")
+weapon_id = "pistol"
+damage = 35.0
+range_metres = 30.0
+fire_rate = 2.5
+noise_level = 7
+max_condition = 100.0
+condition_drain_per_use = 0.5
+noise_radius = 40.0
+magazine_capacity = 12
+reload_time = 1.8
+is_automatic = false
+ads_fov_offset = -10.0
+effective_range = 30.0
+
+[node name="MuzzlePoint" type="Node3D" parent="."]
+position = Vector3(0, 0, -0.4)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

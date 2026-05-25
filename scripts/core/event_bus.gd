@@ -56,10 +56,18 @@ signal inventory_full()
 signal enemy_killed(enemy_type: String, position: Vector3)
 ## Emitted when the player takes a hit. hit_location = body part string.
 signal player_hit(damage: float, hit_location: String)
+## Emitted when any entity takes a hit. target_id is the node name or NPC ID.
+signal combat_hit(target_id: String, damage: float, hit_location: String)
 ## Emitted when a weapon is discharged. noise_level is on a 1-10 scale.
 signal weapon_fired(weapon_id: String, position: Vector3, noise_level: int)
 ## Emitted when a weapon begins its reload sequence.
 signal weapon_reloading(weapon_id: String)
+## Emitted when a bleed effect begins on a target.
+signal bleed_started(target_id: String, bleed_rate: float)
+## Emitted when a death triggers the ragdoll physics sequence.
+signal ragdoll_triggered(target_id: String, hit_direction: Vector3)
+## Emitted when a projectile or melee blow connects — drives blood VFX (Agent 27).
+signal blood_impact(position: Vector3, hit_normal: Vector3)
 
 # ─────────────────────────────────────────────
 # Noise signals
