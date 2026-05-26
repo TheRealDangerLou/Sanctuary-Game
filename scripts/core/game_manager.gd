@@ -55,6 +55,9 @@ var player_stats: Node = null
 var rose_stats: Node = null
 var injury_system: Node = null
 var sanity_system: Node = null
+## Agent 05 — death and loot systems registered on _ready by each script.
+var death_system: Node = null
+var corpse_loot_system: Node = null
 
 # ─────────────────────────────────────────────
 # Lifecycle
