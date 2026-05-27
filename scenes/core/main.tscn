@@ -1,11 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://bm5k9nq3p7d2r"]
+[gd_scene load_steps=3 format=3 uid="uid://bm5k9nq3p7d2r"]
 
 [ext_resource type="Script" path="res://scripts/core/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/ui/debug_overlay.gd" id="2_debug"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
 
 [node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="DebugOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("2_debug")
 
 [node name="WorldLayer" type="Node3D" parent="."]
 

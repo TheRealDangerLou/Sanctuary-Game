@@ -145,8 +145,7 @@ func _handle_fov(delta: float) -> void:
 	var running: bool = false
 	if _player.has_method("get_movement_state"):
 		var st = _player.get_movement_state()
-		# Avoid importing the script constant; compare by value index.
-		running = (st == 2)   # State.RUNNING = 2
+		running = (st == PlayerStateMachine.State.RUNNING)
 
 	var target_fov: float = fov_running if running else fov_default
 	_fp_camera.fov = move_toward(_fp_camera.fov, target_fov, fov_transition_speed * delta)
@@ -171,7 +170,7 @@ func _handle_bob(delta: float) -> void:
 	if moving:
 		var running: bool = false
 		if _player.has_method("get_movement_state"):
-			running = (_player.get_movement_state() == 2)
+			running = (_player.get_movement_state() == PlayerStateMachine.State.RUNNING)
 		intensity  = bob_intensity_run if running else bob_intensity_walk
 		bob_speed  = bob_speed_run if running else bob_speed_walk
 		_bob_time += delta * bob_speed

@@ -15,6 +15,7 @@ var _active_bleeds: Dictionary = {}
 # ─────────────────────────────────────────────
 
 func _ready() -> void:
+	GameManager.combat_system = self
 	EventBus.bleed_started.connect(_on_bleed_started)
 	EventBus.npc_died.connect(_on_npc_died)
 	EventBus.player_hit.connect(_on_player_hit)
