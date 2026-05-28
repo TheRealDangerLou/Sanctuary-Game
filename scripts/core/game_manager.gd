@@ -14,6 +14,11 @@ enum GameState {
 	LOADING,  ## A scene transition is in progress.
 }
 
+enum GameMode {
+	STORY,    ## Shelter-based saves; death respawns at last shelter (not permanent).
+	HARDCORE, ## True permadeath; continuous autosave; death ends the run forever.
+}
+
 # ─────────────────────────────────────────────
 # Constants
 # ─────────────────────────────────────────────
@@ -33,6 +38,9 @@ const NEW_GAME_START_HOUR: int = 6
 var current_state: GameState = GameState.MENU
 var _previous_state: GameState = GameState.MENU
 
+## The active game mode. Set before calling new_game().
+var game_mode: GameMode = GameMode.STORY
+
 # In-game calendar and clock
 var game_day: int = 1
 var game_hour: int = NEW_GAME_START_HOUR
@@ -50,6 +58,17 @@ var world_manager: Node = null
 var weather_system: Node = null
 var crafting_system: Node = null
 var combat_system: Node = null
+## Agent 04 — survival systems registered on _ready by each script.
+var player_stats: Node = null
+var rose_stats: Node = null
+var injury_system: Node = null
+var sanity_system: Node = null
+## Agent 05 — death and loot systems registered on _ready by each script.
+var death_system: Node = null
+var corpse_loot_system: Node = null
+## Agent 06 — noise and detection system registered on _ready.
+var noise_system: Node = null
+var compound_system: Node = null
 
 # ─────────────────────────────────────────────
 # Lifecycle
@@ -104,9 +123,9 @@ func new_game() -> void:
 	set_state(GameState.PLAYING)
 	EventBus.player_spawned.emit(Vector3.ZERO)
 
-## Returns the current in-game time formatted as "Day X - HH:MM".
+## Returns the current in-game time formatted as "Day X — HH:MM".
 func get_time_string() -> String:
-	return "Day %d - %02d:%02d" % [game_day, game_hour, game_minute]
+	return "Day %d — %02d:%02d" % [game_day, game_hour, game_minute]
 
 ## Returns the previous game state before the last transition.
 func get_previous_state() -> GameState:
@@ -150,14 +169,19 @@ func _on_state_changed(state: GameState) -> void:
 		GameState.MENU:
 			get_tree().paused = false
 
-## Transitions to DEAD state and assembles legacy data for the permanent-death signal.
+## Transitions to DEAD state then routes to the correct death signal based on mode.
+## HARDCORE: emits character_died_permanently — DeathSystem wipes saves, legacy screen appears.
+## STORY:    emits player_respawning — SaveSystem loads last shelter, player continues.
 func _on_player_died(_position: Vector3) -> void:
 	if current_state == GameState.DEAD:
 		return
 	set_state(GameState.DEAD)
 	var legacy_data: Dictionary = {
 		"days_survived": game_day,
-		"death_hour": game_hour,
-		"death_minute": game_minute,
+		"death_hour":    game_hour,
+		"death_minute":  game_minute,
 	}
-	EventBus.character_died_permanently.emit(legacy_data)
+	if game_mode == GameMode.HARDCORE:
+		EventBus.character_died_permanently.emit(legacy_data)
+	else:
+		EventBus.player_respawning.emit(legacy_data)

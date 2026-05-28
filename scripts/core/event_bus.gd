@@ -56,10 +56,20 @@ signal inventory_full()
 signal enemy_killed(enemy_type: String, position: Vector3)
 ## Emitted when the player takes a hit. hit_location = body part string.
 signal player_hit(damage: float, hit_location: String)
+## Emitted when any entity takes a hit. target_id is the node name or NPC ID.
+signal combat_hit(target_id: String, damage: float, hit_location: String)
 ## Emitted when a weapon is discharged. noise_level is on a 1-10 scale.
 signal weapon_fired(weapon_id: String, position: Vector3, noise_level: int)
 ## Emitted when a weapon begins its reload sequence.
 signal weapon_reloading(weapon_id: String)
+## Emitted when a weapon jams due to low condition. Clears after the unjam delay.
+signal weapon_jammed(weapon_id: String)
+## Emitted when a bleed effect begins on a target.
+signal bleed_started(target_id: String, bleed_rate: float)
+## Emitted when a death triggers the ragdoll physics sequence.
+signal ragdoll_triggered(target_id: String, hit_direction: Vector3)
+## Emitted when a projectile or melee blow connects — drives blood VFX (Agent 27).
+signal blood_impact(position: Vector3, hit_normal: Vector3)
 
 # ─────────────────────────────────────────────
 # Noise signals
@@ -162,7 +172,27 @@ signal knowledge_unlocked(knowledge_id: String)
 signal game_saved(slot: int)
 ## Emitted after a save slot is successfully loaded.
 signal game_loaded(slot: int)
-## Emitted when the autosave routine is triggered.
+## Emitted when the HARDCORE autosave routine fires.
 signal autosave_triggered()
-## Emitted on permanent death. legacy_data carries stats for the legacy screen.
+## Emitted on permanent death (HARDCORE mode only). legacy_data carries stats for the legacy screen.
 signal character_died_permanently(legacy_data: Dictionary)
+## Emitted in STORY mode when the player dies and will respawn at their last shelter.
+## SaveSystem listens and loads the shelter save. Does NOT wipe saves.
+signal player_respawning(legacy_data: Dictionary)
+## Emitted when the player sleeps at a shelter — triggers a shelter save in STORY mode.
+signal player_slept(shelter_id: String)
+## Emitted when a player-built shelter is registered as a save point.
+signal shelter_created(shelter_id: String, position: Vector3, quality: int)
+## Emitted when a shelter is destroyed and is no longer a valid save point.
+signal shelter_destroyed(shelter_id: String)
+
+# ─────────────────────────────────────────────
+# Corpse loot signals
+# ─────────────────────────────────────────────
+
+## Emitted when an enemy corpse becomes lootable. corpse_id is a unique run-scoped key.
+signal corpse_spawned(corpse_id: String, position: Vector3)
+## Emitted when the player fully loots a corpse container.
+signal corpse_looted(corpse_id: String)
+## Emitted when a corpse container expires and is removed from the world.
+signal corpse_despawned(corpse_id: String)

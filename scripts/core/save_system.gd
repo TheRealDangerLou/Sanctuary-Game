@@ -1,9 +1,19 @@
 extends Node
-## SaveSystem: Full save/load/autosave for all game state.
-## Autoloaded as SaveSystem at startup.
-## save_game()/load_game() collect from and restore to all live GameManager refs.
-## Autosaves once per in-game hour via time_of_day_changed.
-## Permadeath save wipe is handled by DeathSystem on character_died_permanently.
+## SaveSystem: Two-mode save architecture — STORY and HARDCORE.
+##
+## STORY MODE (default):
+##   Saves ONLY when the player sleeps in a shelter they own.
+##   Each shelter gets its own save slot (up to MAX_SAVE_SLOTS).
+##   On death: respawn at last shelter save with all progress from that point.
+##   No shelter save = no respawn; dying before first sleep ends the run.
+##
+## HARDCORE MODE:
+##   True permadeath. Single slot (slot 0). Autosaves every HARDCORE_AUTOSAVE_INTERVAL seconds.
+##   Death fires character_died_permanently → DeathSystem wipes slot 0 → legacy screen.
+##
+## BOTH MODES:
+##   Legacy records (user://legacy_records.json) persist forever.
+##   Rose death = game over, no exceptions.
 
 # ─────────────────────────────────────────────
 # Constants
@@ -12,8 +22,11 @@ extends Node
 const SAVE_DIR: String = "user://saves/"
 const SAVE_EXTENSION: String = ".sav"
 const MAX_SAVE_SLOTS: int = 5
-const AUTOSAVE_SLOT: int = 0
+const HARDCORE_AUTOSAVE_SLOT: int = 0
 const SAVE_VERSION: int = 1
+
+## Real seconds between autosaves in HARDCORE mode.
+const HARDCORE_AUTOSAVE_INTERVAL: float = 60.0
 
 # ─────────────────────────────────────────────
 # Canonical save data schema
@@ -88,6 +101,12 @@ var save_data: Dictionary = {
 		"loot_container_states": {},
 	},
 
+	"shelters": {
+		"points": [],
+		"last_shelter_id": "",
+		"game_mode": "story",
+	},
+
 	"settlement": {
 		"buildings": [],
 		"compound_tier": 0,
@@ -143,14 +162,24 @@ var save_data: Dictionary = {
 # Runtime state
 # ─────────────────────────────────────────────
 
-## Seconds elapsed in PLAYING state this session. Added to stored value on save.
+## Seconds elapsed in PLAYING state this session. Stored in meta on every save.
 var _play_time_seconds: float = 0.0
-## The slot most recently saved to or loaded from (-1 = none this session).
+## Slot most recently saved to or loaded from (-1 = none this session).
 var _current_slot: int = -1
 ## True when load_game() was called before game systems entered the tree.
 var _pending_load: bool = false
-## Blocks autosave during an active load to prevent recursive saves.
+## Prevents re-entrant calls inside apply_pending_load().
 var _is_loading: bool = false
+
+## STORY: shelter_id → ShelterSavePoint for all registered shelters.
+var _shelters: Dictionary = {}
+## STORY: shelter_id of the last shelter the player slept at.
+var _last_shelter_id: String = ""
+## STORY: next save slot index to assign to a new shelter (cycles 0–MAX_SAVE_SLOTS-1).
+var _next_slot: int = 0
+
+## HARDCORE: accumulates real time; fires autosave each HARDCORE_AUTOSAVE_INTERVAL.
+var _hardcore_autosave_accumulator: float = 0.0
 
 # ─────────────────────────────────────────────
 # Lifecycle
@@ -158,11 +187,20 @@ var _is_loading: bool = false
 
 func _ready() -> void:
 	_ensure_save_directory()
-	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
+	EventBus.player_slept.connect(_on_player_slept)
+	EventBus.shelter_created.connect(_on_shelter_created)
+	EventBus.shelter_destroyed.connect(_on_shelter_destroyed)
+	EventBus.player_respawning.connect(_on_player_respawning)
 
 func _process(delta: float) -> void:
-	if GameManager.current_state == GameManager.GameState.PLAYING:
-		_play_time_seconds += delta
+	if GameManager.current_state != GameManager.GameState.PLAYING:
+		return
+	_play_time_seconds += delta
+	if GameManager.game_mode == GameManager.GameMode.HARDCORE:
+		_hardcore_autosave_accumulator += delta
+		if _hardcore_autosave_accumulator >= HARDCORE_AUTOSAVE_INTERVAL:
+			_hardcore_autosave_accumulator = 0.0
+			autosave()
 
 # ─────────────────────────────────────────────
 # Public API
@@ -228,14 +266,66 @@ func apply_pending_load() -> void:
 	_pending_load = false
 	_is_loading = false
 
-## Writes slot 0 without player interaction.
-## Emits autosave_triggered before writing so the HUD can display an indicator.
+## HARDCORE mode only: writes slot 0.
+## No-op in STORY mode — saves only happen when sleeping at a shelter.
 func autosave() -> void:
+	if GameManager.game_mode != GameManager.GameMode.HARDCORE:
+		return
 	EventBus.autosave_triggered.emit()
-	save_game(AUTOSAVE_SLOT)
+	save_game(HARDCORE_AUTOSAVE_SLOT)
+
+## Story mode: save the game at the shelter with the given ID.
+## The shelter must be registered (via shelter_created signal or register_shelter()).
+## Emits game_saved on success.
+func save_at_shelter(shelter_id: String) -> void:
+	if not _shelters.has(shelter_id):
+		Logger.error("SaveSystem: save_at_shelter — unknown shelter '%s'" % shelter_id)
+		return
+	_last_shelter_id = shelter_id
+	_collect_shelters()
+	var sp: ShelterSavePoint = _shelters[shelter_id]
+	save_game(sp.save_slot)
+
+## Register a player-built shelter as a save point and assign it a save slot.
+## No-op in HARDCORE mode. No-op if shelter_id is already registered.
+func register_shelter(
+	shelter_id: String,
+	display_name: String,
+	position: Vector3,
+	quality: int,
+) -> void:
+	if GameManager.game_mode == GameManager.GameMode.HARDCORE:
+		return
+	if _shelters.has(shelter_id):
+		return
+	var slot: int = _next_slot
+	_next_slot = (_next_slot + 1) % MAX_SAVE_SLOTS
+	_shelters[shelter_id] = ShelterSavePoint.new(
+		shelter_id, display_name, position, quality, slot, GameManager.game_day
+	)
+	Logger.info("SaveSystem: registered shelter '%s' on slot %d" % [shelter_id, slot])
+
+## Remove a shelter from the registry (e.g., structure destroyed).
+## If it was the last slept-at shelter, falls back to the next available one.
+func unregister_shelter(shelter_id: String) -> void:
+	if not _shelters.has(shelter_id):
+		return
+	_shelters.erase(shelter_id)
+	if _last_shelter_id == shelter_id:
+		_last_shelter_id = "" if _shelters.is_empty() else _shelters.keys()[0]
+	Logger.info("SaveSystem: unregistered shelter '%s'" % shelter_id)
+
+## Returns the ShelterSavePoint for the last shelter the player slept at, or null if none.
+func get_last_shelter() -> ShelterSavePoint:
+	return _shelters.get(_last_shelter_id, null)
+
+## Returns a copy of all registered shelter save points (shelter_id → ShelterSavePoint).
+func get_all_shelters() -> Dictionary:
+	return _shelters.duplicate()
 
 ## Returns a lightweight Dictionary for the save-slot selection UI.
-## Keys: slot, timestamp, character_name, game_day, play_time_seconds, save_version.
+## Keys: slot, timestamp, character_name, game_day, play_time_seconds, save_version,
+##       game_mode, last_shelter_id.
 ## Returns {} if the slot is empty or unreadable.
 func get_save_preview(slot: int) -> Dictionary:
 	var path: String = get_save_path(slot)
@@ -249,15 +339,18 @@ func get_save_preview(slot: int) -> Dictionary:
 	var parsed: Variant = JSON.parse_string(text)
 	if not parsed is Dictionary:
 		return {}
-	var meta: Dictionary = parsed.get("meta", {})
-	var world: Dictionary = parsed.get("world", {})
+	var meta: Dictionary     = parsed.get("meta", {})
+	var world: Dictionary    = parsed.get("world", {})
+	var shelters: Dictionary = parsed.get("shelters", {})
 	return {
-		"slot":               slot,
-		"timestamp":          str(meta.get("timestamp", "")),
-		"character_name":     str(meta.get("character_name", "")),
-		"game_day":           int(world.get("game_day", 1)),
-		"play_time_seconds":  int(meta.get("play_time_seconds", 0)),
-		"save_version":       int(meta.get("save_version", SAVE_VERSION)),
+		"slot":              slot,
+		"timestamp":         str(meta.get("timestamp", "")),
+		"character_name":    str(meta.get("character_name", "")),
+		"game_day":          int(world.get("game_day", 1)),
+		"play_time_seconds": int(meta.get("play_time_seconds", 0)),
+		"save_version":      int(meta.get("save_version", SAVE_VERSION)),
+		"game_mode":         str(shelters.get("game_mode", "story")),
+		"last_shelter_id":   str(shelters.get("last_shelter_id", "")),
 	}
 
 ## Returns true if the given slot contains a valid save file on disk.
@@ -283,6 +376,7 @@ func _collect_save_data(slot: int) -> void:
 	_collect_sanity()
 	_collect_inventory()
 	_collect_world()
+	_collect_shelters()
 	_collect_settlement()
 	_collect_knowledge()
 	_collect_statistics()
@@ -351,6 +445,15 @@ func _collect_world() -> void:
 	save_data["world"]["game_hour"]   = GameManager.game_hour
 	save_data["world"]["game_minute"] = GameManager.game_minute
 
+func _collect_shelters() -> void:
+	var points: Array = []
+	for sp: ShelterSavePoint in _shelters.values():
+		points.append(sp.to_dict())
+	save_data["shelters"]["points"]          = points
+	save_data["shelters"]["last_shelter_id"] = _last_shelter_id
+	save_data["shelters"]["game_mode"]       = "hardcore" if \
+		GameManager.game_mode == GameManager.GameMode.HARDCORE else "story"
+
 func _collect_settlement() -> void:
 	var comp: CompoundSystem = GameManager.compound_system as CompoundSystem
 	if not comp:
@@ -392,6 +495,7 @@ func _apply_save_data() -> void:
 	_apply_injuries()
 	_apply_sanity()
 	_apply_inventory()
+	_apply_shelters()
 	_apply_settlement()
 	_apply_knowledge()
 
@@ -474,11 +578,23 @@ func _apply_inventory() -> void:
 	EventBus.inventory_weight_changed.emit(inv._current_weight, inv.max_weight)
 
 func _apply_world() -> void:
-	var w: Dictionary  = save_data.get("world", {})
+	var w: Dictionary = save_data.get("world", {})
 	GameManager.game_day    = int(w.get("game_day", 1))
 	GameManager.game_hour   = int(w.get("game_hour", 6))
 	GameManager.game_minute = int(w.get("game_minute", 0))
 	EventBus.time_of_day_changed.emit(GameManager.game_hour)
+
+func _apply_shelters() -> void:
+	_shelters.clear()
+	var sh: Dictionary = save_data.get("shelters", {})
+	_last_shelter_id = str(sh.get("last_shelter_id", ""))
+	var max_used_slot: int = -1
+	for d: Dictionary in sh.get("points", []):
+		var sp: ShelterSavePoint = ShelterSavePoint.from_dict(d)
+		if sp.shelter_id != "":
+			_shelters[sp.shelter_id] = sp
+			max_used_slot = max(max_used_slot, sp.save_slot)
+	_next_slot = (max_used_slot + 1) % MAX_SAVE_SLOTS
 
 func _apply_settlement() -> void:
 	var comp: CompoundSystem = GameManager.compound_system as CompoundSystem
@@ -523,13 +639,39 @@ func _apply_knowledge() -> void:
 	dir.list_dir_end()
 
 # ─────────────────────────────────────────────
+# Signal handlers
+# ─────────────────────────────────────────────
+
+func _on_player_slept(shelter_id: String) -> void:
+	save_at_shelter(shelter_id)
+
+func _on_shelter_created(shelter_id: String, position: Vector3, quality: int) -> void:
+	var display_name: String
+	match quality:
+		1:    display_name = "Camp"
+		2:    display_name = "Tent"
+		_:    display_name = "Shelter"
+	register_shelter(shelter_id, display_name, position, quality)
+
+func _on_shelter_destroyed(shelter_id: String) -> void:
+	unregister_shelter(shelter_id)
+
+func _on_player_respawning(_legacy_data: Dictionary) -> void:
+	## STORY mode: load the last shelter save and respawn the player there.
+	## HARDCORE mode never emits player_respawning — this handler is a no-op for it.
+	var sp: ShelterSavePoint = get_last_shelter()
+	if not sp:
+		Logger.error("SaveSystem: story death with no shelter save — cannot respawn (run ends)")
+		return
+	var spawn_pos: Vector3 = sp.world_position
+	load_game(sp.save_slot)
+	GameManager.set_state(GameManager.GameState.PLAYING)
+	EventBus.player_spawned.emit(spawn_pos)
+
+# ─────────────────────────────────────────────
 # Internal
 # ─────────────────────────────────────────────
 
 func _ensure_save_directory() -> void:
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
-
-func _on_time_of_day_changed(_hour: int) -> void:
-	if not _is_loading and GameManager.current_state == GameManager.GameState.PLAYING:
-		autosave()
