@@ -297,6 +297,10 @@ func _collect_player() -> void:
 	p["thirst"]      = ps.thirst
 	p["stamina"]     = ps.stamina
 	p["temperature"] = ps.temperature
+	var node: Node3D = ps.get_parent() as Node3D
+	if node:
+		p["position"] = {"x": node.position.x, "y": node.position.y, "z": node.position.z}
+		p["rotation"] = {"x": node.rotation.x, "y": node.rotation.y, "z": node.rotation.z}
 
 func _collect_rose() -> void:
 	var rs: RoseStats = GameManager.rose_stats as RoseStats
@@ -402,6 +406,12 @@ func _apply_player() -> void:
 	ps.stamina     = float(p.get("stamina", 100.0))
 	ps.temperature = float(p.get("temperature", 37.0))
 	ps.is_dead     = false
+	var node: Node3D = ps.get_parent() as Node3D
+	if node:
+		var pos: Dictionary = p.get("position", {})
+		var rot: Dictionary = p.get("rotation", {})
+		node.position = Vector3(float(pos.get("x", 0.0)), float(pos.get("y", 0.0)), float(pos.get("z", 0.0)))
+		node.rotation = Vector3(float(rot.get("x", 0.0)), float(rot.get("y", 0.0)), float(rot.get("z", 0.0)))
 	EventBus.player_health_changed.emit(ps.health, ps.MAX_HEALTH)
 	EventBus.player_hunger_changed.emit(ps.hunger, ps.MAX_HUNGER)
 	EventBus.player_stamina_changed.emit(ps.stamina, ps.MAX_STAMINA)
