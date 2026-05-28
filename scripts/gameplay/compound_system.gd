@@ -21,6 +21,7 @@ var settlement_morale: float = 0.5
 # ─────────────────────────────────────────────
 
 func _ready() -> void:
+	GameManager.compound_system = self
 	EventBus.building_destroyed.connect(_on_building_destroyed)
 	_load_building_registry()
 

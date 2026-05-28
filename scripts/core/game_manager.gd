@@ -60,6 +60,7 @@ var death_system: Node = null
 var corpse_loot_system: Node = null
 ## Agent 06 — noise and detection system registered on _ready.
 var noise_system: Node = null
+var compound_system: Node = null
 
 # ─────────────────────────────────────────────
 # Lifecycle

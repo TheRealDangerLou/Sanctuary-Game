@@ -28,6 +28,8 @@ enum WeaponType { MELEE, RANGED }
 @export var condition_poor_threshold: float = 30.0
 ## Noise radius in world-space metres when fired/swung.
 @export var noise_radius: float = 5.0
+## Bleed damage per second applied when a hit rolls bleed. Subclasses inherit this.
+@export var bleed_rate: float = 2.0
 
 # ─────────────────────────────────────────────
 # Runtime state
