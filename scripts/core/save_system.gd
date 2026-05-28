@@ -1,8 +1,9 @@
 extends Node
-## SaveSystem: Manages persistence of all game state across sessions.
-## Agent 11 (Save & Load System) will fully implement serialisation logic.
-## This file defines the canonical save data schema and stub entry points.
+## SaveSystem: Full save/load/autosave for all game state.
 ## Autoloaded as SaveSystem at startup.
+## save_game()/load_game() collect from and restore to all live GameManager refs.
+## Autosaves once per in-game hour via time_of_day_changed.
+## Permadeath save wipe is handled by DeathSystem on character_died_permanently.
 
 # ─────────────────────────────────────────────
 # Constants
@@ -12,17 +13,17 @@ const SAVE_DIR: String = "user://saves/"
 const SAVE_EXTENSION: String = ".sav"
 const MAX_SAVE_SLOTS: int = 5
 const AUTOSAVE_SLOT: int = 0
+const SAVE_VERSION: int = 1
 
 # ─────────────────────────────────────────────
 # Canonical save data schema
-# All fields are defined here so every agent knows what to read/write.
-# Vector3 values are stored as sub-Dictionaries {x, y, z} for JSON compatibility.
+# Vector3 stored as {x,y,z} dicts for JSON compatibility.
+# injuries stored as Dictionary (location → {severity, is_bleeding, is_infected}).
 # ─────────────────────────────────────────────
 
 var save_data: Dictionary = {
-	# Metadata
 	"meta": {
-		"save_version": 1,
+		"save_version": SAVE_VERSION,
 		"game_version": "0.1.0",
 		"timestamp": "",
 		"play_time_seconds": 0,
@@ -30,7 +31,6 @@ var save_data: Dictionary = {
 		"character_name": "",
 	},
 
-	# Player vitals and body state
 	"player": {
 		"health": 100.0,
 		"max_health": 100.0,
@@ -45,28 +45,37 @@ var save_data: Dictionary = {
 		"max_stamina": 100.0,
 		"position": {"x": 0.0, "y": 0.0, "z": 0.0},
 		"rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
-		"injuries": [],
+		"injuries": {},
 		"infection_status": false,
 		"infection_stage": 0,
 	},
 
-	# Inventory
+	"rose": {
+		"health": 80.0,
+		"max_health": 80.0,
+		"hunger": 80.0,
+		"max_hunger": 80.0,
+		"thirst": 80.0,
+		"max_thirst": 80.0,
+		"stamina": 80.0,
+		"max_stamina": 80.0,
+		"sanity": 80.0,
+		"max_sanity": 80.0,
+		"temperature": 37.0,
+		"injuries": {},
+	},
+
 	"inventory": {
 		"items": [],
 		"equipped_weapon": "",
 		"equipped_armor": {
-			"head": "",
-			"chest": "",
-			"legs": "",
-			"feet": "",
-			"hands": "",
+			"head": "", "chest": "", "legs": "", "feet": "", "hands": "",
 		},
 		"current_weight": 0.0,
 		"max_weight": 30.0,
 		"hotbar": ["", "", "", "", "", "", "", ""],
 	},
 
-	# World / environment state
 	"world": {
 		"game_day": 1,
 		"game_hour": 6,
@@ -79,24 +88,18 @@ var save_data: Dictionary = {
 		"loot_container_states": {},
 	},
 
-	# Settlement / compound
 	"settlement": {
 		"buildings": [],
 		"compound_tier": 0,
-		"morale": 50.0,
+		"morale": 0.5,
 		"resources": {
-			"wood": 0,
-			"stone": 0,
-			"metal": 0,
-			"food": 0,
-			"water": 0,
-			"medicine": 0,
+			"wood": 0, "stone": 0, "metal": 0,
+			"food": 0, "water": 0, "medicine": 0,
 		},
 		"walls": [],
 		"perimeter_state": {},
 	},
 
-	# NPCs
 	"npcs": {
 		"recruited": [],
 		"dead": [],
@@ -104,7 +107,6 @@ var save_data: Dictionary = {
 		"npc_states": {},
 	},
 
-	# Narrative and quests
 	"narrative": {
 		"daughter_clues_found": [],
 		"total_clues": 12,
@@ -114,20 +116,17 @@ var save_data: Dictionary = {
 		"player_choices": {},
 	},
 
-	# Reputation
 	"reputation": {
 		"moral_alignment": 0.0,
 		"faction_reputations": {},
 	},
 
-	# Knowledge / skills
 	"knowledge": {
 		"unlocked_recipes": [],
 		"unlocked_knowledge": [],
 		"skill_levels": {},
 	},
 
-	# Statistics
 	"statistics": {
 		"enemies_killed": 0,
 		"days_survived": 0,
@@ -141,49 +140,386 @@ var save_data: Dictionary = {
 }
 
 # ─────────────────────────────────────────────
+# Runtime state
+# ─────────────────────────────────────────────
+
+## Seconds elapsed in PLAYING state this session. Added to stored value on save.
+var _play_time_seconds: float = 0.0
+## The slot most recently saved to or loaded from (-1 = none this session).
+var _current_slot: int = -1
+## True when load_game() was called before game systems entered the tree.
+var _pending_load: bool = false
+## Blocks autosave during an active load to prevent recursive saves.
+var _is_loading: bool = false
+
+# ─────────────────────────────────────────────
 # Lifecycle
 # ─────────────────────────────────────────────
 
 func _ready() -> void:
 	_ensure_save_directory()
+	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
+
+func _process(delta: float) -> void:
+	if GameManager.current_state == GameManager.GameState.PLAYING:
+		_play_time_seconds += delta
 
 # ─────────────────────────────────────────────
-# Public API - implemented by Agent 11
+# Public API
 # ─────────────────────────────────────────────
 
-## Serialises the current game state and writes it to the given save slot.
+## Serialises live game state and writes it to the given slot.
 ## Emits EventBus.game_saved on success.
 func save_game(slot: int) -> void:
-	pass
+	_collect_save_data(slot)
+	var path: String = get_save_path(slot)
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if not file:
+		Logger.error("SaveSystem: cannot open %s for write" % path)
+		return
+	file.store_string(JSON.stringify(save_data, "\t"))
+	file.close()
+	_current_slot = slot
+	Logger.info("SaveSystem: saved slot %d (day %d)" % [slot, GameManager.game_day])
+	EventBus.game_saved.emit(slot)
 
-## Reads the specified save slot from disk and restores all game state.
+## Reads the specified slot and restores all live system state.
+## If game systems are already in the scene tree, state is applied immediately.
+## Otherwise marks a pending load — call apply_pending_load() once systems are ready.
 ## Emits EventBus.game_loaded on success.
 func load_game(slot: int) -> void:
-	pass
+	var path: String = get_save_path(slot)
+	if not FileAccess.file_exists(path):
+		Logger.error("SaveSystem: slot %d not found" % slot)
+		return
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		Logger.error("SaveSystem: cannot open %s for read" % path)
+		return
+	var text: String = file.get_as_text()
+	file.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if not parsed is Dictionary:
+		Logger.error("SaveSystem: slot %d is corrupted" % slot)
+		return
+	save_data = parsed
+	var file_version: int = int(save_data.get("meta", {}).get("save_version", 0))
+	if file_version != SAVE_VERSION:
+		Logger.warn("SaveSystem: slot %d has version %d, current is %d" % [slot, file_version, SAVE_VERSION])
+	_play_time_seconds = float(save_data.get("meta", {}).get("play_time_seconds", 0.0))
+	_current_slot = slot
+	_is_loading = true
+	if GameManager.player_stats != null:
+		_apply_save_data()
+		_pending_load = false
+	else:
+		_pending_load = true
+	_is_loading = false
+	Logger.info("SaveSystem: loaded slot %d (day %d)" % [slot, int(save_data.get("world", {}).get("game_day", 1))])
+	EventBus.game_loaded.emit(slot)
 
-## Writes a save to AUTOSAVE_SLOT (slot 0) without player interaction.
-## Emits EventBus.autosave_triggered before writing.
+## Apply a previously-pending load. Call from the gameplay scene after all
+## systems have entered the tree (e.g., at the end of the game scene's _ready()).
+func apply_pending_load() -> void:
+	if not _pending_load:
+		return
+	_is_loading = true
+	_apply_save_data()
+	_pending_load = false
+	_is_loading = false
+
+## Writes slot 0 without player interaction.
+## Emits autosave_triggered before writing so the HUD can display an indicator.
 func autosave() -> void:
 	EventBus.autosave_triggered.emit()
+	save_game(AUTOSAVE_SLOT)
 
-## Returns a lightweight Dictionary suitable for a save-slot preview UI.
-## Includes: day, play_time, timestamp, character_name. Returns {} if slot is empty.
+## Returns a lightweight Dictionary for the save-slot selection UI.
+## Keys: slot, timestamp, character_name, game_day, play_time_seconds, save_version.
+## Returns {} if the slot is empty or unreadable.
 func get_save_preview(slot: int) -> Dictionary:
-	return {}
+	var path: String = get_save_path(slot)
+	if not FileAccess.file_exists(path):
+		return {}
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		return {}
+	var text: String = file.get_as_text()
+	file.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if not parsed is Dictionary:
+		return {}
+	var meta: Dictionary = parsed.get("meta", {})
+	var world: Dictionary = parsed.get("world", {})
+	return {
+		"slot":               slot,
+		"timestamp":          str(meta.get("timestamp", "")),
+		"character_name":     str(meta.get("character_name", "")),
+		"game_day":           int(world.get("game_day", 1)),
+		"play_time_seconds":  int(meta.get("play_time_seconds", 0)),
+		"save_version":       int(meta.get("save_version", SAVE_VERSION)),
+	}
 
-## Returns true if the given save slot contains valid save data.
+## Returns true if the given slot contains a valid save file on disk.
 func slot_has_data(slot: int) -> bool:
 	return FileAccess.file_exists(get_save_path(slot))
 
-## Returns the file path for a given save slot index.
+## Returns the file path for a given slot index.
 func get_save_path(slot: int) -> String:
 	return SAVE_DIR + "slot_%d%s" % [slot, SAVE_EXTENSION]
+
+# ─────────────────────────────────────────────
+# Collect — snapshot live systems into save_data
+# ─────────────────────────────────────────────
+
+func _collect_save_data(slot: int) -> void:
+	save_data["meta"]["save_version"]      = SAVE_VERSION
+	save_data["meta"]["timestamp"]         = Time.get_datetime_string_from_system()
+	save_data["meta"]["play_time_seconds"] = int(_play_time_seconds)
+	save_data["meta"]["slot"]              = slot
+	_collect_player()
+	_collect_rose()
+	_collect_injuries()
+	_collect_sanity()
+	_collect_inventory()
+	_collect_world()
+	_collect_settlement()
+	_collect_knowledge()
+	_collect_statistics()
+
+func _collect_player() -> void:
+	var ps: SurvivalStats = GameManager.player_stats as SurvivalStats
+	if not ps:
+		return
+	var p: Dictionary = save_data["player"]
+	p["health"]      = ps.health
+	p["hunger"]      = ps.hunger
+	p["thirst"]      = ps.thirst
+	p["stamina"]     = ps.stamina
+	p["temperature"] = ps.temperature
+
+func _collect_rose() -> void:
+	var rs: RoseStats = GameManager.rose_stats as RoseStats
+	if not rs:
+		return
+	var r: Dictionary = save_data["rose"]
+	r["health"]      = rs.health
+	r["hunger"]      = rs.hunger
+	r["thirst"]      = rs.thirst
+	r["stamina"]     = rs.stamina
+	r["sanity"]      = rs.sanity
+	r["temperature"] = rs.temperature
+
+func _collect_injuries() -> void:
+	var inj: InjurySystem = GameManager.injury_system as InjurySystem
+	if not inj:
+		return
+	var all: Dictionary          = inj.get_all_injuries()
+	var dad_injuries: Dictionary  = {}
+	var rose_injuries: Dictionary = {}
+	for loc: String in all.keys():
+		if loc.begins_with("rose_"):
+			rose_injuries[loc] = all[loc].duplicate()
+		else:
+			dad_injuries[loc] = all[loc].duplicate()
+	save_data["player"]["injuries"]         = dad_injuries
+	save_data["player"]["infection_status"] = inj.has_any_infection()
+	save_data["rose"]["injuries"]           = rose_injuries
+
+func _collect_sanity() -> void:
+	var san: SanitySystem = GameManager.sanity_system as SanitySystem
+	if not san:
+		return
+	save_data["player"]["sanity"] = san.sanity
+
+func _collect_inventory() -> void:
+	var inv: InventorySystem = GameManager.inventory_manager as InventorySystem
+	if not inv:
+		return
+	var items: Array = []
+	for item_id: String in inv.get_all_items().keys():
+		items.append({"id": item_id, "qty": inv.get_quantity(item_id)})
+	save_data["inventory"]["items"]          = items
+	save_data["inventory"]["current_weight"] = inv.get_current_weight()
+
+func _collect_world() -> void:
+	save_data["world"]["game_day"]    = GameManager.game_day
+	save_data["world"]["game_hour"]   = GameManager.game_hour
+	save_data["world"]["game_minute"] = GameManager.game_minute
+
+func _collect_settlement() -> void:
+	var comp: CompoundSystem = GameManager.compound_system as CompoundSystem
+	if not comp:
+		return
+	save_data["settlement"]["compound_tier"] = comp.compound_tier
+	save_data["settlement"]["morale"]        = comp.settlement_morale
+	var buildings: Array = []
+	for building_id: String in comp._placed_buildings.keys():
+		for placement: Dictionary in comp._placed_buildings[building_id]:
+			var pos: Vector3 = placement.get("pos", Vector3.ZERO)
+			buildings.append({
+				"id":  building_id,
+				"pos": {"x": pos.x, "y": pos.y, "z": pos.z},
+			})
+	save_data["settlement"]["buildings"] = buildings
+
+func _collect_knowledge() -> void:
+	var craft: CraftingSystem = GameManager.crafting_system as CraftingSystem
+	if not craft:
+		return
+	save_data["knowledge"]["unlocked_recipes"] = craft.get_known_recipe_ids()
+
+func _collect_statistics() -> void:
+	save_data["statistics"]["days_survived"]           = GameManager.game_day
+	save_data["statistics"]["total_play_time_seconds"] = int(_play_time_seconds)
+	var ds: DeathSystem = GameManager.death_system as DeathSystem
+	if ds:
+		var run_stats: Dictionary = ds.get_run_stats()
+		save_data["statistics"]["enemies_killed"] = run_stats.get("enemies_killed", 0)
+
+# ─────────────────────────────────────────────
+# Apply — push loaded save_data into live systems
+# ─────────────────────────────────────────────
+
+func _apply_save_data() -> void:
+	_apply_world()
+	_apply_player()
+	_apply_rose()
+	_apply_injuries()
+	_apply_sanity()
+	_apply_inventory()
+	_apply_settlement()
+	_apply_knowledge()
+
+func _apply_player() -> void:
+	var ps: SurvivalStats = GameManager.player_stats as SurvivalStats
+	if not ps:
+		return
+	var p: Dictionary = save_data.get("player", {})
+	ps.health      = float(p.get("health", 100.0))
+	ps.hunger      = float(p.get("hunger", 100.0))
+	ps.thirst      = float(p.get("thirst", 100.0))
+	ps.stamina     = float(p.get("stamina", 100.0))
+	ps.temperature = float(p.get("temperature", 37.0))
+	ps.is_dead     = false
+	EventBus.player_health_changed.emit(ps.health, ps.MAX_HEALTH)
+	EventBus.player_hunger_changed.emit(ps.hunger, ps.MAX_HUNGER)
+	EventBus.player_stamina_changed.emit(ps.stamina, ps.MAX_STAMINA)
+	EventBus.player_temperature_changed.emit(ps.temperature)
+
+func _apply_rose() -> void:
+	var rs: RoseStats = GameManager.rose_stats as RoseStats
+	if not rs:
+		return
+	var r: Dictionary = save_data.get("rose", {})
+	rs.health      = float(r.get("health", 80.0))
+	rs.hunger      = float(r.get("hunger", 80.0))
+	rs.thirst      = float(r.get("thirst", 80.0))
+	rs.stamina     = float(r.get("stamina", 80.0))
+	rs.sanity      = float(r.get("sanity", 80.0))
+	rs.temperature = float(r.get("temperature", 37.0))
+	rs.is_dead     = false
+
+func _apply_injuries() -> void:
+	var inj: InjurySystem = GameManager.injury_system as InjurySystem
+	if not inj:
+		return
+	inj._injuries.clear()
+	var dad_injuries: Dictionary  = save_data.get("player", {}).get("injuries", {})
+	var rose_injuries: Dictionary = save_data.get("rose", {}).get("injuries", {})
+	for loc: String in dad_injuries.keys():
+		var e: Dictionary = dad_injuries[loc]
+		inj._injuries[loc] = {
+			"severity":    float(e.get("severity", 0.0)),
+			"is_bleeding": bool(e.get("is_bleeding", false)),
+			"is_infected": bool(e.get("is_infected", false)),
+		}
+	for loc: String in rose_injuries.keys():
+		var e: Dictionary = rose_injuries[loc]
+		inj._injuries[loc] = {
+			"severity":    float(e.get("severity", 0.0)),
+			"is_bleeding": bool(e.get("is_bleeding", false)),
+			"is_infected": bool(e.get("is_infected", false)),
+		}
+
+func _apply_sanity() -> void:
+	var san: SanitySystem = GameManager.sanity_system as SanitySystem
+	if not san:
+		return
+	san.sanity = float(save_data.get("player", {}).get("sanity", 100.0))
+	EventBus.player_sanity_changed.emit(san.sanity, san.MAX_SANITY)
+
+func _apply_inventory() -> void:
+	var inv: InventorySystem = GameManager.inventory_manager as InventorySystem
+	if not inv:
+		return
+	inv._items.clear()
+	inv._current_weight = 0.0
+	for entry: Dictionary in save_data.get("inventory", {}).get("items", []):
+		var item_id: String = str(entry.get("id", ""))
+		var qty: int        = int(entry.get("qty", 0))
+		if item_id != "" and qty > 0:
+			inv._items[item_id] = qty
+	inv._current_weight = float(save_data.get("inventory", {}).get("current_weight", 0.0))
+	EventBus.inventory_weight_changed.emit(inv._current_weight, inv.max_weight)
+
+func _apply_world() -> void:
+	var w: Dictionary  = save_data.get("world", {})
+	GameManager.game_day    = int(w.get("game_day", 1))
+	GameManager.game_hour   = int(w.get("game_hour", 6))
+	GameManager.game_minute = int(w.get("game_minute", 0))
+	EventBus.time_of_day_changed.emit(GameManager.game_hour)
+
+func _apply_settlement() -> void:
+	var comp: CompoundSystem = GameManager.compound_system as CompoundSystem
+	if not comp:
+		return
+	comp._placed_buildings.clear()
+	comp._active_stations.clear()
+	comp.compound_tier     = int(save_data.get("settlement", {}).get("compound_tier", 0))
+	comp.settlement_morale = float(save_data.get("settlement", {}).get("morale", 0.5))
+	for entry: Dictionary in save_data.get("settlement", {}).get("buildings", []):
+		var bid: String = str(entry.get("id", ""))
+		if bid == "":
+			continue
+		var pd: Dictionary = entry.get("pos", {})
+		var pos: Vector3 = Vector3(float(pd.get("x", 0.0)), float(pd.get("y", 0.0)), float(pd.get("z", 0.0)))
+		if not comp._placed_buildings.has(bid):
+			comp._placed_buildings[bid] = []
+		comp._placed_buildings[bid].append({"pos": pos})
+		var bdata: BuildingData = comp._building_registry.get(bid)
+		if bdata and bdata.provides_station != "" and not comp._active_stations.has(bdata.provides_station):
+			comp._active_stations.append(bdata.provides_station)
+
+func _apply_knowledge() -> void:
+	var craft: CraftingSystem = GameManager.crafting_system as CraftingSystem
+	if not craft:
+		return
+	var saved_ids: Array = save_data.get("knowledge", {}).get("unlocked_recipes", [])
+	if saved_ids.is_empty():
+		return
+	var dir: DirAccess = DirAccess.open("res://resources/recipes/")
+	if not dir:
+		return
+	dir.list_dir_begin()
+	var fname: String = dir.get_next()
+	while fname != "":
+		if fname.ends_with(".tres"):
+			var recipe: CraftingRecipe = ResourceLoader.load("res://resources/recipes/" + fname)
+			if recipe and recipe is CraftingRecipe:
+				if saved_ids.has(recipe.recipe_id) and not craft._known_recipes.has(recipe.recipe_id):
+					craft._known_recipes[recipe.recipe_id] = recipe
+		fname = dir.get_next()
+	dir.list_dir_end()
 
 # ─────────────────────────────────────────────
 # Internal
 # ─────────────────────────────────────────────
 
-## Creates the save directory on disk if it does not already exist.
 func _ensure_save_directory() -> void:
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
+
+func _on_time_of_day_changed(_hour: int) -> void:
+	if not _is_loading and GameManager.current_state == GameManager.GameState.PLAYING:
+		autosave()
