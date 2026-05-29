@@ -14,6 +14,11 @@ enum GameState {
 	LOADING,  ## A scene transition is in progress.
 }
 
+enum GameMode {
+	STORY,    ## Shelter-based saves; death respawns at last shelter (not permanent).
+	HARDCORE, ## True permadeath; continuous autosave; death ends the run forever.
+}
+
 # ─────────────────────────────────────────────
 # Constants
 # ─────────────────────────────────────────────
@@ -32,6 +37,9 @@ const NEW_GAME_START_HOUR: int = 6
 ## The active game state.
 var current_state: GameState = GameState.MENU
 var _previous_state: GameState = GameState.MENU
+
+## The active game mode. Set before calling new_game().
+var game_mode: GameMode = GameMode.STORY
 
 # In-game calendar and clock
 var game_day: int = 1
@@ -161,14 +169,19 @@ func _on_state_changed(state: GameState) -> void:
 		GameState.MENU:
 			get_tree().paused = false
 
-## Transitions to DEAD state and assembles legacy data for the permanent-death signal.
+## Transitions to DEAD state then routes to the correct death signal based on mode.
+## HARDCORE: emits character_died_permanently — DeathSystem wipes saves, legacy screen appears.
+## STORY:    emits player_respawning — SaveSystem loads last shelter, player continues.
 func _on_player_died(_position: Vector3) -> void:
 	if current_state == GameState.DEAD:
 		return
 	set_state(GameState.DEAD)
 	var legacy_data: Dictionary = {
 		"days_survived": game_day,
-		"death_hour": game_hour,
-		"death_minute": game_minute,
+		"death_hour":    game_hour,
+		"death_minute":  game_minute,
 	}
-	EventBus.character_died_permanently.emit(legacy_data)
+	if game_mode == GameMode.HARDCORE:
+		EventBus.character_died_permanently.emit(legacy_data)
+	else:
+		EventBus.player_respawning.emit(legacy_data)
