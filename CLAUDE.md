@@ -67,6 +67,17 @@ player_slept(shelter_id)
   → save_game(shelter.save_slot)
 ```
 
+**Zombie hit pipeline:**
+```
+weapon.attack()
+  → EventBus.combat_hit(zombie.name, scaled_dmg, hit_location)
+  → zombie.receive_hit(scaled_dmg, hit_location, hit_pos)
+      → headshot if hit_pos.y > origin.y + 1.3  → _die() instantly
+      → otherwise _health -= damage; _die() at 0
+  → EventBus.enemy_killed("zombie", position)  [on death]
+  → CorpseLootSystem registers loot
+```
+
 ---
 
 ### Key Classes and Files
@@ -78,6 +89,7 @@ player_slept(shelter_id)
 | `scripts/core/game_manager.gd` | `GameMode` enum (STORY/HARDCORE). Routes `player_died` to correct signal. |
 | `scripts/gameplay/death_system.gd` | Handles legacy records and save wipe. Only reacts to `character_died_permanently`. |
 | `scripts/core/event_bus.gd` | All inter-system signals. Never reference nodes directly between systems. |
+| `scripts/enemies/zombie_controller.gd` | ZombieController: 5-state AI, noise awareness, melee attack, headshot death. |
 
 ### Save File Layout
 
@@ -95,7 +107,7 @@ player_slept(shelter_id)
 ### Spawn order in `main.gd`
 
 1. Instantiate `game_world.tscn` → add to `WorldLayer`
-   - All system nodes (`InjurySystem`, `SanitySystem`, `NoiseSystem`, `DeathSystem`, `InventorySystem`, `CorpseLootSystem`) self-register on `GameManager` in their `_ready()`
+   - All system nodes self-register on `GameManager` in their `_ready()`
 2. Instantiate `player.tscn` → add to `PlayerLayer`, add to `"player"` group
    - `SurvivalStats` is a direct child — registers `GameManager.player_stats = self`
    - `save_system._apply_player()` uses `SurvivalStats.get_parent()` to teleport the player on load
@@ -128,8 +140,8 @@ These rules apply to every agent, every PR, every session. Non-negotiable.
 | 1 | ✅ Merged (PR #10) | Stabilisation — audit all systems, fix crashes, add Logger + DebugOverlay |
 | 2 | ✅ Merged (PR #12) | Save system — full shelter-based + hardcore implementation |
 | 3 | ✅ Merged (PR #13) | Small playable map (500×500 m, hospital + town + forest) |
-| 4 | ✅ PR open | Connect all systems to map, spawn Dad + Rose, call `apply_pending_load()` |
-| 5 | Pending | Basic civilian zombie enemy |
+| 4 | ✅ Merged (PR #14) | Connect all systems to map, spawn Dad + Rose, call `apply_pending_load()` |
+| 5 | ✅ PR open | Basic civilian zombie — shamble, noise reaction, headshot kill, loot drop |
 | 6 | Pending | Basic HUD (vignette, desaturation, stat bars) |
 | 7 | Pending | Death and legacy screen |
 | 8 | Pending | Game feel pass |

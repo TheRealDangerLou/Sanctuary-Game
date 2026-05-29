@@ -1,0 +1,38 @@
+[gd_scene load_steps=7 format=3 uid="uid://zombie_civilian_v1"]
+
+[ext_resource type="Script" path="res://scripts/enemies/zombie_controller.gd" id="1_zctrl"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Material_body"]
+albedo_color = Color(0.22, 0.28, 0.22, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.22
+height = 0.44
+
+[sub_resource type="StandardMaterial3D" id="Material_head"]
+albedo_color = Color(0.28, 0.32, 0.24, 1)
+
+[node name="Zombie" type="CharacterBody3D"]
+script = ExtResource("1_zctrl")
+
+[node name="BodyCollision" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_body")
+position = Vector3(0, 0.9, 0)
+
+[node name="BodyMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_body")
+position = Vector3(0, 0.9, 0)
+surface_material_override/0 = SubResource("Material_body")
+
+[node name="HeadMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_head")
+position = Vector3(0, 1.82, 0)
+surface_material_override/0 = SubResource("Material_head")
