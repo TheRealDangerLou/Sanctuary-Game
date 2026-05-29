@@ -1,0 +1,228 @@
+[gd_scene load_steps=20 format=3 uid="uid://cmap0world001"]
+
+[ext_resource type="Script" path="res://scripts/world/world_manager.gd" id="1_wman"]
+[ext_resource type="Script" path="res://scripts/world/zone_trigger.gd" id="2_ztrig"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(500, 0.4, 500)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(500, 0.4, 500)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hospital_zone"]
+size = Vector3(160, 30, 130)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_town_zone"]
+size = Vector3(210, 30, 160)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_forest_zone"]
+size = Vector3(500, 30, 200)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hosp_a"]
+size = Vector3(60, 12, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hosp_a"]
+size = Vector3(60, 12, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hosp_b"]
+size = Vector3(20, 8, 30)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hosp_b"]
+size = Vector3(20, 8, 30)
+
+[sub_resource type="BoxMesh" id="BoxMesh_town_a"]
+size = Vector3(20, 10, 15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_town_a"]
+size = Vector3(20, 10, 15)
+
+[sub_resource type="BoxMesh" id="BoxMesh_town_b"]
+size = Vector3(15, 10, 20)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_town_b"]
+size = Vector3(15, 10, 20)
+
+[sub_resource type="BoxMesh" id="BoxMesh_town_c"]
+size = Vector3(25, 6, 15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_town_c"]
+size = Vector3(25, 6, 15)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tree"]
+size = Vector3(2, 8, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tree"]
+size = Vector3(2, 8, 2)
+
+[node name="GameWorld" type="Node3D"]
+
+[node name="WorldManager" type="Node" parent="."]
+script = ExtResource("1_wman")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, -0.866025, 0, 0.866025, 0.5, 0, 50, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="Terrain" type="Node3D" parent="."]
+
+[node name="Ground" type="StaticBody3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Terrain/Ground"]
+mesh = SubResource("BoxMesh_ground")
+
+[node name="GroundCollision" type="CollisionShape3D" parent="Terrain/Ground"]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Zones" type="Node3D" parent="."]
+
+[node name="HospitalZone" type="Area3D" parent="Zones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -175)
+script = ExtResource("2_ztrig")
+zone_id = "hospital"
+
+[node name="HospitalCollision" type="CollisionShape3D" parent="Zones/HospitalZone"]
+shape = SubResource("BoxShape3D_hospital_zone")
+
+[node name="TownZone" type="Area3D" parent="Zones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("2_ztrig")
+zone_id = "town"
+
+[node name="TownCollision" type="CollisionShape3D" parent="Zones/TownZone"]
+shape = SubResource("BoxShape3D_town_zone")
+
+[node name="ForestZone" type="Area3D" parent="Zones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 175)
+script = ExtResource("2_ztrig")
+zone_id = "forest"
+
+[node name="ForestCollision" type="CollisionShape3D" parent="Zones/ForestZone"]
+shape = SubResource("BoxShape3D_forest_zone")
+
+[node name="Hospital" type="Node3D" parent="."]
+
+[node name="MainBuilding" type="StaticBody3D" parent="Hospital"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -175)
+
+[node name="Mesh" type="MeshInstance3D" parent="Hospital/MainBuilding"]
+mesh = SubResource("BoxMesh_hosp_a")
+
+[node name="Collision" type="CollisionShape3D" parent="Hospital/MainBuilding"]
+shape = SubResource("BoxShape3D_hosp_a")
+
+[node name="Wing" type="StaticBody3D" parent="Hospital"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 4, -165)
+
+[node name="Mesh" type="MeshInstance3D" parent="Hospital/Wing"]
+mesh = SubResource("BoxMesh_hosp_b")
+
+[node name="Collision" type="CollisionShape3D" parent="Hospital/Wing"]
+shape = SubResource("BoxShape3D_hosp_b")
+
+[node name="Town" type="Node3D" parent="."]
+
+[node name="Shop" type="StaticBody3D" parent="Town"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 5, -20)
+
+[node name="Mesh" type="MeshInstance3D" parent="Town/Shop"]
+mesh = SubResource("BoxMesh_town_a")
+
+[node name="Collision" type="CollisionShape3D" parent="Town/Shop"]
+shape = SubResource("BoxShape3D_town_a")
+
+[node name="House_A" type="StaticBody3D" parent="Town"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 5, 20)
+
+[node name="Mesh" type="MeshInstance3D" parent="Town/House_A"]
+mesh = SubResource("BoxMesh_town_b")
+
+[node name="Collision" type="CollisionShape3D" parent="Town/House_A"]
+shape = SubResource("BoxShape3D_town_b")
+
+[node name="GasStation" type="StaticBody3D" parent="Town"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 3, -30)
+
+[node name="Mesh" type="MeshInstance3D" parent="Town/GasStation"]
+mesh = SubResource("BoxMesh_town_c")
+
+[node name="Collision" type="CollisionShape3D" parent="Town/GasStation"]
+shape = SubResource("BoxShape3D_town_c")
+
+[node name="Forest" type="Node3D" parent="."]
+
+[node name="Tree_01" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -80, 4, 140)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_01"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_01"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="Tree_02" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 160)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_02"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_02"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="Tree_03" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 4, 150)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_03"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_03"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="Tree_04" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110, 4, 180)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_04"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_04"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="Tree_05" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 4, 200)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_05"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_05"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="Tree_06" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -60, 4, 220)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_06"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_06"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="Tree_07" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 4, 230)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_07"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_07"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="Tree_08" type="StaticBody3D" parent="Forest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, 4, 160)
+
+[node name="Mesh" type="MeshInstance3D" parent="Forest/Tree_08"]
+mesh = SubResource("BoxMesh_tree")
+
+[node name="Collision" type="CollisionShape3D" parent="Forest/Tree_08"]
+shape = SubResource("BoxShape3D_tree")
+
+[node name="SpawnPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
