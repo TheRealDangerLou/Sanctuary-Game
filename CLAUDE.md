@@ -72,8 +72,7 @@ player_slept(shelter_id)
 ### Key Classes and Files
 
 | File | Purpose |
-|---|
----|
+|---|---|
 | `scripts/core/save_system.gd` | Autoloaded as `SaveSystem`. Orchestrates all save/load for both modes. |
 | `scripts/core/shelter_save_point.gd` | Data class — one instance per registered shelter. Serialises to/from JSON. |
 | `scripts/core/game_manager.gd` | `GameMode` enum (STORY/HARDCORE). Routes `player_died` to correct signal. |
@@ -110,8 +109,8 @@ These rules apply to every agent, every PR, every session. Non-negotiable.
 | Step | Status | Description |
 |---|---|---|
 | 1 | ✅ Merged (PR #10) | Stabilisation — audit all systems, fix crashes, add Logger + DebugOverlay |
-| 2 | ✅ PR open | Save system — full shelter-based + hardcore implementation |
-| 3 | Pending | Small playable map (500×500 m, hospital + town + forest) |
+| 2 | ✅ Merged (PR #12) | Save system — full shelter-based + hardcore implementation |
+| 3 | ✅ PR open | Small playable map (500×500 m, hospital + town + forest) |
 | 4 | Pending | Connect all systems to map, call `apply_pending_load()` in scene `_ready()` |
 | 5 | Pending | Basic civilian zombie enemy |
 | 6 | Pending | Basic HUD (vignette, desaturation, stat bars) |
