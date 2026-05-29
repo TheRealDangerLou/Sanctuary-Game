@@ -1,7 +1,14 @@
-[gd_scene load_steps=20 format=3 uid="uid://cmap0world001"]
+[gd_scene load_steps=27 format=3 uid="uid://cmap0world001"]
 
-[ext_resource type="Script" path="res://scripts/world/world_manager.gd" id="1_wman"]
-[ext_resource type="Script" path="res://scripts/world/zone_trigger.gd" id="2_ztrig"]
+[ext_resource type="Script" path="res://scripts/world/game_world.gd" id="1_gworld"]
+[ext_resource type="Script" path="res://scripts/world/world_manager.gd" id="2_wman"]
+[ext_resource type="Script" path="res://scripts/world/zone_trigger.gd" id="3_ztrig"]
+[ext_resource type="Script" path="res://scripts/player/injury_system.gd" id="4_inj"]
+[ext_resource type="Script" path="res://scripts/player/sanity_system.gd" id="5_san"]
+[ext_resource type="Script" path="res://scripts/gameplay/noise_system.gd" id="6_noise"]
+[ext_resource type="Script" path="res://scripts/gameplay/death_system.gd" id="7_death"]
+[ext_resource type="Script" path="res://scripts/gameplay/inventory_system.gd" id="8_inv"]
+[ext_resource type="Script" path="res://scripts/gameplay/corpse_loot_system.gd" id="9_cls"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(500, 0.4, 500)
@@ -55,9 +62,28 @@ size = Vector3(2, 8, 2)
 size = Vector3(2, 8, 2)
 
 [node name="GameWorld" type="Node3D"]
+script = ExtResource("1_gworld")
 
 [node name="WorldManager" type="Node" parent="."]
-script = ExtResource("1_wman")
+script = ExtResource("2_wman")
+
+[node name="InjurySystem" type="Node" parent="."]
+script = ExtResource("4_inj")
+
+[node name="SanitySystem" type="Node" parent="."]
+script = ExtResource("5_san")
+
+[node name="NoiseSystem" type="Node" parent="."]
+script = ExtResource("6_noise")
+
+[node name="DeathSystem" type="Node" parent="."]
+script = ExtResource("7_death")
+
+[node name="InventorySystem" type="Node" parent="."]
+script = ExtResource("8_inv")
+
+[node name="CorpseLootSystem" type="Node" parent="."]
+script = ExtResource("9_cls")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.5, -0.866025, 0, 0.866025, 0.5, 0, 50, 0)
@@ -79,7 +105,7 @@ shape = SubResource("BoxShape3D_ground")
 
 [node name="HospitalZone" type="Area3D" parent="Zones"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -175)
-script = ExtResource("2_ztrig")
+script = ExtResource("3_ztrig")
 zone_id = "hospital"
 
 [node name="HospitalCollision" type="CollisionShape3D" parent="Zones/HospitalZone"]
@@ -87,7 +113,7 @@ shape = SubResource("BoxShape3D_hospital_zone")
 
 [node name="TownZone" type="Area3D" parent="Zones"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-script = ExtResource("2_ztrig")
+script = ExtResource("3_ztrig")
 zone_id = "town"
 
 [node name="TownCollision" type="CollisionShape3D" parent="Zones/TownZone"]
@@ -95,7 +121,7 @@ shape = SubResource("BoxShape3D_town_zone")
 
 [node name="ForestZone" type="Area3D" parent="Zones"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 175)
-script = ExtResource("2_ztrig")
+script = ExtResource("3_ztrig")
 zone_id = "forest"
 
 [node name="ForestCollision" type="CollisionShape3D" parent="Zones/ForestZone"]
