@@ -1,0 +1,30 @@
+[gd_scene load_steps=6 format=3 uid="uid://rose_companion_v1"]
+
+[ext_resource type="Script" path="res://scripts/player/rose_companion.gd" id="1_rose"]
+[ext_resource type="Script" path="res://scripts/player/rose_stats.gd" id="2_rstats"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rose"]
+radius = 0.3
+height = 1.4
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_rose"]
+radius = 0.3
+height = 1.4
+
+[sub_resource type="StandardMaterial3D" id="Material_rose"]
+albedo_color = Color(0.8, 0.55, 0.55, 1)
+
+[node name="Rose" type="CharacterBody3D"]
+script = ExtResource("1_rose")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_rose")
+position = Vector3(0, 0.7, 0)
+
+[node name="MeshInstance" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_rose")
+position = Vector3(0, 0.7, 0)
+surface_material_override/0 = SubResource("Material_rose")
+
+[node name="RoseStats" type="Node" parent="."]
+script = ExtResource("2_rstats")

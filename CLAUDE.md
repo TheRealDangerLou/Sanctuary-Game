@@ -90,6 +90,23 @@ player_slept(shelter_id)
 
 ---
 
+## Scene Wiring (Phase 2 Step 4)
+
+### Spawn order in `main.gd`
+
+1. Instantiate `game_world.tscn` → add to `WorldLayer`
+   - All system nodes (`InjurySystem`, `SanitySystem`, `NoiseSystem`, `DeathSystem`, `InventorySystem`, `CorpseLootSystem`) self-register on `GameManager` in their `_ready()`
+2. Instantiate `player.tscn` → add to `PlayerLayer`, add to `"player"` group
+   - `SurvivalStats` is a direct child — registers `GameManager.player_stats = self`
+   - `save_system._apply_player()` uses `SurvivalStats.get_parent()` to teleport the player on load
+3. Instantiate `rose.tscn` → add to `PlayerLayer`, 1.5m beside Dad
+   - `RoseStats` is a direct child — registers `GameManager.rose_stats = self`
+4. If `SaveSystem._pending_load`: `apply_pending_load()` → restores all live state from disk
+   Else: `GameManager.new_game()` → fresh start, emits `player_spawned`
+5. `Input.mouse_mode = MOUSE_MODE_CAPTURED`
+
+---
+
 ## Sacred Rules
 
 These rules apply to every agent, every PR, every session. Non-negotiable.
@@ -110,8 +127,8 @@ These rules apply to every agent, every PR, every session. Non-negotiable.
 |---|---|---|
 | 1 | ✅ Merged (PR #10) | Stabilisation — audit all systems, fix crashes, add Logger + DebugOverlay |
 | 2 | ✅ Merged (PR #12) | Save system — full shelter-based + hardcore implementation |
-| 3 | ✅ PR open | Small playable map (500×500 m, hospital + town + forest) |
-| 4 | Pending | Connect all systems to map, call `apply_pending_load()` in scene `_ready()` |
+| 3 | ✅ Merged (PR #13) | Small playable map (500×500 m, hospital + town + forest) |
+| 4 | ✅ PR open | Connect all systems to map, spawn Dad + Rose, call `apply_pending_load()` |
 | 5 | Pending | Basic civilian zombie enemy |
 | 6 | Pending | Basic HUD (vignette, desaturation, stat bars) |
 | 7 | Pending | Death and legacy screen |

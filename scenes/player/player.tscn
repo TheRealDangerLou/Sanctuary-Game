@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://player_main_scene"]
+[gd_scene load_steps=9 format=3 uid="uid://player_main_scene"]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_ctrl"]
 [ext_resource type="Script" path="res://scripts/player/player_input.gd" id="2_input"]
 [ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="3_cam"]
+[ext_resource type="Script" path="res://scripts/player/survival_stats.gd" id="4_sstats"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_stand"]
 radius = 0.4
@@ -77,3 +78,6 @@ bus = &"SFX"
 
 [node name="PlayerInput" type="Node" parent="."]
 script = ExtResource("2_input")
+
+[node name="SurvivalStats" type="Node" parent="."]
+script = ExtResource("4_sstats")
