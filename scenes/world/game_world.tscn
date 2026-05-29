@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://cmap0world001"]
+[gd_scene load_steps=28 format=3 uid="uid://cmap0world001"]
 
 [ext_resource type="Script" path="res://scripts/world/game_world.gd" id="1_gworld"]
 [ext_resource type="Script" path="res://scripts/world/world_manager.gd" id="2_wman"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/gameplay/death_system.gd" id="7_death"]
 [ext_resource type="Script" path="res://scripts/gameplay/inventory_system.gd" id="8_inv"]
 [ext_resource type="Script" path="res://scripts/gameplay/corpse_loot_system.gd" id="9_cls"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/zombie_civilian.tscn" id="10_zombie"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(500, 0.4, 500)
@@ -252,3 +253,17 @@ shape = SubResource("BoxShape3D_tree")
 
 [node name="SpawnPoint" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Zombies" type="Node3D" parent="."]
+
+[node name="Zombie_Hospital_01" parent="Zombies" instance=ExtResource("10_zombie")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1, -160)
+
+[node name="Zombie_Hospital_02" parent="Zombies" instance=ExtResource("10_zombie")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 1, -192)
+
+[node name="Zombie_Town_01" parent="Zombies" instance=ExtResource("10_zombie")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 1, 8)
+
+[node name="Zombie_Forest_01" parent="Zombies" instance=ExtResource("10_zombie")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 1, 128)
