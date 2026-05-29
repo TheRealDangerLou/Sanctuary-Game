@@ -172,10 +172,19 @@ signal knowledge_unlocked(knowledge_id: String)
 signal game_saved(slot: int)
 ## Emitted after a save slot is successfully loaded.
 signal game_loaded(slot: int)
-## Emitted when the autosave routine is triggered.
+## Emitted when the HARDCORE autosave routine fires.
 signal autosave_triggered()
-## Emitted on permanent death. legacy_data carries stats for the legacy screen.
+## Emitted on permanent death (HARDCORE mode only). legacy_data carries stats for the legacy screen.
 signal character_died_permanently(legacy_data: Dictionary)
+## Emitted in STORY mode when the player dies and will respawn at their last shelter.
+## SaveSystem listens and loads the shelter save. Does NOT wipe saves.
+signal player_respawning(legacy_data: Dictionary)
+## Emitted when the player sleeps at a shelter — triggers a shelter save in STORY mode.
+signal player_slept(shelter_id: String)
+## Emitted when a player-built shelter is registered as a save point.
+signal shelter_created(shelter_id: String, position: Vector3, quality: int)
+## Emitted when a shelter is destroyed and is no longer a valid save point.
+signal shelter_destroyed(shelter_id: String)
 
 # ─────────────────────────────────────────────
 # Corpse loot signals
