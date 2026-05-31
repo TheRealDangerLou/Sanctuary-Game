@@ -90,6 +90,7 @@ weapon.attack()
 | `scripts/gameplay/death_system.gd` | Handles legacy records and save wipe. Only reacts to `character_died_permanently`. |
 | `scripts/core/event_bus.gd` | All inter-system signals. Never reference nodes directly between systems. |
 | `scripts/enemies/zombie_controller.gd` | ZombieController: 5-state AI, noise awareness, melee attack, headshot death. |
+| `scripts/world/camera_shake.gd` | CameraShake: screen shake on player_hit via EventBus, finds camera via group. |
 
 ### Save File Layout
 
@@ -144,4 +145,4 @@ These rules apply to every agent, every PR, every session. Non-negotiable.
 | 5 | ✅ PR open | Basic civilian zombie — shamble, noise reaction, headshot kill, loot drop |
 | 6 | Pending | Basic HUD (vignette, desaturation, stat bars) |
 | 7 | Pending | Death and legacy screen |
-| 8 | Pending | Game feel pass |
+| 8 | PR open | Game feel pass |
