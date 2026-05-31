@@ -158,8 +158,9 @@ func _die() -> void:
 	is_dead = true
 	EventBus.player_died.emit(Vector3.ZERO)
 
-func _on_combat_hit(target_id: String, damage: float, _hit_location: String) -> void:
+func _on_combat_hit(target_id: String, damage: float, hit_location: String) -> void:
 	if target_id == "player":
+		EventBus.player_hit.emit(damage, hit_location)
 		take_damage(damage)
 
 func _on_player_died(_pos: Vector3) -> void:
