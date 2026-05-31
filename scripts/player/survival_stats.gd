@@ -93,6 +93,7 @@ func eat(nutrition: float) -> void:
 ## Consume water. hydration is thirst units restored (0–100 scale).
 func drink(hydration: float) -> void:
 	thirst = minf(MAX_THIRST, thirst + hydration)
+	EventBus.player_thirst_changed.emit(thirst, MAX_THIRST)
 
 ## Update body temperature in °C. Called by WeatherSystem / environment hazards.
 func set_temperature(new_temp: float) -> void:
@@ -134,6 +135,7 @@ func _tick_hunger(delta: float) -> void:
 
 func _tick_thirst(delta: float) -> void:
 	thirst = maxf(0.0, thirst - THIRST_DECAY_RATE * delta)
+	EventBus.player_thirst_changed.emit(thirst, MAX_THIRST)
 	if thirst <= 0.0:
 		take_damage(DEHYDRATION_DAMAGE_RATE * delta, "dehydration")
 

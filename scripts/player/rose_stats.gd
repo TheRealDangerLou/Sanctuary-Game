@@ -67,12 +67,14 @@ func take_damage(amount: float, _source: String = "") -> void:
 	if is_dead:
 		return
 	health = maxf(0.0, health - amount)
+	EventBus.rose_health_changed.emit(health, MAX_HEALTH)
 	if health <= 0.0:
 		_die()
 
 ## Restore Rose's health up to MAX_HEALTH.
 func heal(amount: float) -> void:
 	health = minf(MAX_HEALTH, health + amount)
+	EventBus.rose_health_changed.emit(health, MAX_HEALTH)
 
 ## Feed Rose. She absorbs 80% of the nutrition Dad would from the same item.
 func eat(nutrition: float) -> void:
