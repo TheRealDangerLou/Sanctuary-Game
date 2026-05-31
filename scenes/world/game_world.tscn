@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://cmap0world001"]
+[gd_scene load_steps=29 format=3 uid="uid://cmap0world001"]
 
 [ext_resource type="Script" path="res://scripts/world/game_world.gd" id="1_gworld"]
 [ext_resource type="Script" path="res://scripts/world/world_manager.gd" id="2_wman"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/gameplay/inventory_system.gd" id="8_inv"]
 [ext_resource type="Script" path="res://scripts/gameplay/corpse_loot_system.gd" id="9_cls"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/zombie_civilian.tscn" id="10_zombie"]
+[ext_resource type="Script" path="res://scripts/world/session_stats.gd" id="11_sstats"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(500, 0.4, 500)
@@ -85,6 +86,9 @@ script = ExtResource("8_inv")
 
 [node name="CorpseLootSystem" type="Node" parent="."]
 script = ExtResource("9_cls")
+
+[node name="SessionStats" type="Node" parent="."]
+script = ExtResource("11_sstats")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.5, -0.866025, 0, 0.866025, 0.5, 0, 50, 0)

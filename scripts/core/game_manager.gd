@@ -7,11 +7,12 @@ extends Node
 # ─────────────────────────────────────────────
 
 enum GameState {
-	MENU,     ## Title / main menu is active.
-	PLAYING,  ## Normal gameplay loop is running.
-	PAUSED,   ## Game is paused (physics and gameplay frozen).
-	DEAD,     ## Player has died; death sequence is playing.
-	LOADING,  ## A scene transition is in progress.
+	MENU,      ## Title / main menu is active.
+	PLAYING,   ## Normal gameplay loop is running.
+	PAUSED,    ## Game is paused (physics and gameplay frozen).
+	DEAD,      ## Player has died; death sequence is playing.
+	LOADING,   ## A scene transition is in progress.
+	GAME_OVER, ## Death screen and legacy screen are active.
 }
 
 enum GameMode {
@@ -69,6 +70,8 @@ var corpse_loot_system: Node = null
 ## Agent 06 — noise and detection system registered on _ready.
 var noise_system: Node = null
 var compound_system: Node = null
+## Phase 2 Step 7 — session stats registered on _ready by SessionStats.
+var session_stats: Node = null
 
 # ─────────────────────────────────────────────
 # Lifecycle
@@ -162,7 +165,8 @@ func _tick_minute() -> void:
 func _on_state_changed(state: GameState) -> void:
 	match state:
 		GameState.DEAD:
-			# Unfreeze the tree so the death sequence can animate.
+			get_tree().paused = false
+		GameState.GAME_OVER:
 			get_tree().paused = false
 		GameState.LOADING:
 			get_tree().paused = false
@@ -172,16 +176,63 @@ func _on_state_changed(state: GameState) -> void:
 ## Transitions to DEAD state then routes to the correct death signal based on mode.
 ## HARDCORE: emits character_died_permanently — DeathSystem wipes saves, legacy screen appears.
 ## STORY:    emits player_respawning — SaveSystem loads last shelter, player continues.
+## Rose death arrives here via player_died too — npc_died("rose") is checked first so the
+## GAME_OVER path fires before any mode-specific respawn logic can execute.
 func _on_player_died(_position: Vector3) -> void:
-	if current_state == GameState.DEAD:
+	if current_state == GameState.DEAD or current_state == GameState.GAME_OVER:
 		return
 	set_state(GameState.DEAD)
-	var legacy_data: Dictionary = {
-		"days_survived": game_day,
-		"death_hour":    game_hour,
-		"death_minute":  game_minute,
-	}
-	if game_mode == GameMode.HARDCORE:
-		EventBus.character_died_permanently.emit(legacy_data)
+	var cause: String = "unknown"
+	if rose_stats and rose_stats.is_dead:
+		cause = "rose killed"
+	elif player_stats:
+		cause = _resolve_cause_of_death()
+	if session_stats:
+		session_stats.set_cause_of_death(cause)
+	var stats: Dictionary = {}
+	if session_stats:
+		stats = session_stats.get_stats()
 	else:
+		stats = {
+			"days_survived": game_day,
+			"zombies_killed": 0,
+			"cause_of_death": cause,
+			"game_mode": game_mode,
+		}
+	if rose_stats and rose_stats.is_dead:
+		set_state(GameState.GAME_OVER)
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		EventBus.game_over.emit(stats)
+		return
+	if game_mode == GameMode.HARDCORE:
+		var legacy_data: Dictionary = {
+			"days_survived": game_day,
+			"death_hour":    game_hour,
+			"death_minute":  game_minute,
+		}
+		EventBus.character_died_permanently.emit(legacy_data)
+		set_state(GameState.GAME_OVER)
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		EventBus.game_over.emit(stats)
+	else:
+		var legacy_data: Dictionary = {
+			"days_survived": game_day,
+			"death_hour":    game_hour,
+			"death_minute":  game_minute,
+		}
 		EventBus.player_respawning.emit(legacy_data)
+
+func _resolve_cause_of_death() -> String:
+	if not player_stats:
+		return "unknown"
+	var ps: Node = player_stats
+	if ps.get("hunger") != null and ps.hunger <= 0.0:
+		return "starvation"
+	if ps.get("thirst") != null and ps.thirst <= 0.0:
+		return "dehydration"
+	if ps.get("temperature") != null:
+		if ps.temperature < 34.0:
+			return "hypothermia"
+		if ps.temperature > 39.5:
+			return "hyperthermia"
+	return "zombie attack"

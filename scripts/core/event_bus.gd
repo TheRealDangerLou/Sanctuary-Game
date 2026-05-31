@@ -187,6 +187,14 @@ signal shelter_created(shelter_id: String, position: Vector3, quality: int)
 signal shelter_destroyed(shelter_id: String)
 
 # ─────────────────────────────────────────────
+# Death signals
+# ─────────────────────────────────────────────
+
+## Emitted when the game is fully over and the legacy screen should be shown.
+## Carries the final stats dictionary for display.
+signal game_over(stats: Dictionary)
+
+# ─────────────────────────────────────────────
 # Corpse loot signals
 # ─────────────────────────────────────────────
 

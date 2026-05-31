@@ -90,6 +90,9 @@ weapon.attack()
 | `scripts/gameplay/death_system.gd` | Handles legacy records and save wipe. Only reacts to `character_died_permanently`. |
 | `scripts/core/event_bus.gd` | All inter-system signals. Never reference nodes directly between systems. |
 | `scripts/enemies/zombie_controller.gd` | ZombieController: 5-state AI, noise awareness, melee attack, headshot death. |
+| `scripts/ui/death_screen.gd` | Full-screen death splash. Auto-advances to legacy screen after 2 s. |
+| `scripts/ui/legacy_screen.gd` | Legacy screen: shows run stats, Play Again / Quit buttons. |
+| `scripts/world/session_stats.gd` | Per-run stat tracker: days survived, zombies killed, cause of death. |
 
 ### Save File Layout
 
@@ -143,5 +146,5 @@ These rules apply to every agent, every PR, every session. Non-negotiable.
 | 4 | ✅ Merged (PR #14) | Connect all systems to map, spawn Dad + Rose, call `apply_pending_load()` |
 | 5 | ✅ PR open | Basic civilian zombie — shamble, noise reaction, headshot kill, loot drop |
 | 6 | Pending | Basic HUD (vignette, desaturation, stat bars) |
-| 7 | Pending | Death and legacy screen |
+| 7 | PR open | Death and legacy screen |
 | 8 | Pending | Game feel pass |

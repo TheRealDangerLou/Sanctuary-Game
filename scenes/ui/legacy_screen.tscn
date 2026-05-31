@@ -1,0 +1,113 @@
+[gd_scene load_steps=2 format=3 uid="uid://legacy_screen_v1"]
+
+[ext_resource type="Script" path="res://scripts/ui/legacy_screen.gd" id="1_lscreen"]
+
+[node name="LegacyScreen" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_lscreen")
+visible = false
+
+[node name="Overlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.04, 0.04, 0.97)
+
+[node name="Panel" type="VBoxContainer" parent="Overlay"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(600, 500)
+alignment = 1
+
+[node name="Title" type="Label" parent="Overlay/Panel"]
+text = "LEGACY"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
+
+[node name="Spacer" type="Control" parent="Overlay/Panel"]
+custom_minimum_size = Vector2(0, 30)
+
+[node name="Stats" type="VBoxContainer" parent="Overlay/Panel"]
+
+[node name="DaysRow" type="HBoxContainer" parent="Overlay/Panel/Stats"]
+
+[node name="Label" type="Label" parent="Overlay/Panel/Stats/DaysRow"]
+text = "Days Survived"
+custom_minimum_size = Vector2(300, 0)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="Value" type="Label" parent="Overlay/Panel/Stats/DaysRow"]
+text = "0"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="KillsRow" type="HBoxContainer" parent="Overlay/Panel/Stats"]
+
+[node name="Label" type="Label" parent="Overlay/Panel/Stats/KillsRow"]
+text = "Zombies Killed"
+custom_minimum_size = Vector2(300, 0)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="Value" type="Label" parent="Overlay/Panel/Stats/KillsRow"]
+text = "0"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="CauseRow" type="HBoxContainer" parent="Overlay/Panel/Stats"]
+
+[node name="Label" type="Label" parent="Overlay/Panel/Stats/CauseRow"]
+text = "Cause of Death"
+custom_minimum_size = Vector2(300, 0)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="Value" type="Label" parent="Overlay/Panel/Stats/CauseRow"]
+text = "unknown"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="ModeRow" type="HBoxContainer" parent="Overlay/Panel/Stats"]
+
+[node name="Label" type="Label" parent="Overlay/Panel/Stats/ModeRow"]
+text = "Game Mode"
+custom_minimum_size = Vector2(300, 0)
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="Value" type="Label" parent="Overlay/Panel/Stats/ModeRow"]
+text = "STORY"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="Spacer2" type="Control" parent="Overlay/Panel"]
+custom_minimum_size = Vector2(0, 40)
+
+[node name="Buttons" type="HBoxContainer" parent="Overlay/Panel"]
+alignment = 1
+
+[node name="PlayAgain" type="Button" parent="Overlay/Panel/Buttons"]
+text = "PLAY AGAIN"
+custom_minimum_size = Vector2(200, 60)
+theme_override_font_sizes/font_size = 24
+
+[node name="Spacer" type="Control" parent="Overlay/Panel/Buttons"]
+custom_minimum_size = Vector2(40, 0)
+
+[node name="Quit" type="Button" parent="Overlay/Panel/Buttons"]
+text = "QUIT"
+custom_minimum_size = Vector2(200, 60)
+theme_override_font_sizes/font_size = 24
