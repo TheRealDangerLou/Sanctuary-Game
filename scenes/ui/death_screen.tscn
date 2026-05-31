@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3 uid="uid://death_screen_v1"]
+
+[ext_resource type="Script" path="res://scripts/ui/death_screen.gd" id="1_dscreen"]
+
+[node name="DeathScreen" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_dscreen")
+visible = false
+
+[node name="Overlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.85)
+
+[node name="VBox" type="VBoxContainer" parent="Overlay"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Overlay/VBox"]
+text = "SANCTUARY LOST"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 72
+theme_override_colors/font_color = Color(0.65, 0.15, 0.15, 1)
+
+[node name="Cause" type="Label" parent="Overlay/VBox"]
+text = "unknown"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.75, 0.65, 0.65, 1)
+
+[node name="TransitionTimer" type="Timer" parent="."]
