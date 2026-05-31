@@ -142,6 +142,6 @@ These rules apply to every agent, every PR, every session. Non-negotiable.
 | 3 | ✅ Merged (PR #13) | Small playable map (500×500 m, hospital + town + forest) |
 | 4 | ✅ Merged (PR #14) | Connect all systems to map, spawn Dad + Rose, call `apply_pending_load()` |
 | 5 | ✅ PR open | Basic civilian zombie — shamble, noise reaction, headshot kill, loot drop |
-| 6 | Pending | Basic HUD (vignette, desaturation, stat bars) |
+| 6 | PR open | Basic HUD (vignette, desaturation, stat bars) |
 | 7 | Pending | Death and legacy screen |
 | 8 | Pending | Game feel pass |

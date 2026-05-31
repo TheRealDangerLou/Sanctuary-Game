@@ -15,12 +15,21 @@ signal player_spawned(position: Vector3)
 signal player_health_changed(new_health: float, max_health: float)
 ## Emitted whenever the player's hunger value changes.
 signal player_hunger_changed(new_hunger: float, max_hunger: float)
+## Emitted whenever the player's thirst value changes.
+signal player_thirst_changed(new_thirst: float, max_thirst: float)
 ## Emitted whenever the player's core body temperature changes.
 signal player_temperature_changed(new_temp: float)
 ## Emitted whenever the player's sanity value changes.
 signal player_sanity_changed(new_sanity: float, max_sanity: float)
 ## Emitted whenever the player's stamina value changes.
 signal player_stamina_changed(new_stamina: float, max_stamina: float)
+
+# ─────────────────────────────────────────────
+# Rose signals
+# ─────────────────────────────────────────────
+
+## Emitted whenever Rose's health value changes.
+signal rose_health_changed(new_health: float, max_health: float)
 
 # ─────────────────────────────────────────────
 # Injury signals
